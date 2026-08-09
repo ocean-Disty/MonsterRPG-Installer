@@ -63,6 +63,23 @@ set "CFLAGS=-m32 -municode -O2 -s -Wall -Wextra -mwindows -static-libgcc"
 set "LIBS=-lcomctl32 -lole32 -loleaut32 -luuid -lshell32 -lshlwapi -ladvapi32 -lgdi32 -luser32"
 
 REM ---------------------------------------------------------------------------
+REM  zlib MUST be linked statically, and this is not a preference.
+REM
+REM  A plain -lz picks the import library and the finished .exe then needs
+REM  zlib1.dll sitting next to it or on the PATH. It has neither on a player's
+REM  computer: zlib1.dll only exists here because MSYS2 is installed. Windows
+REM  refuses to start the program at all, with no message and exit code
+REM  0xC0000135, which is STATUS_DLL_NOT_FOUND.
+REM
+REM  That failure is invisible on a machine with the toolchain on its PATH,
+REM  which is every machine this gets tested on, so it survives right up until
+REM  somebody downloads it. -Bstatic pulls libz.a into the .exe instead;
+REM  -Bdynamic puts things back for the Windows libraries after it, which are
+REM  always import libraries and always present.
+REM ---------------------------------------------------------------------------
+set "ZLIB=-Wl,-Bstatic -lz -Wl,-Bdynamic"
+
+REM ---------------------------------------------------------------------------
 REM  1. The launcher - what the player double-clicks to start the game.
 REM
 REM     Built without a space in the name so the resource line in Setup.rc can
@@ -107,7 +124,7 @@ windres -I "%SRC%" "%SRC%\Setup.rc" -O coff -o "%OUT%\Setup.res"
 if errorlevel 1 goto failed
 gcc %CFLAGS% -o "%DIST%\MonsterRPG Setup.exe" ^
     "%SRC%\Setup.c" "%SRC%\Common.c" "%SRC%\Zip.c" "%SRC%\Unzip.c" ^
-    "%OUT%\Setup.res" %LIBS% -lz
+    "%OUT%\Setup.res" %LIBS% %ZLIB%
 if errorlevel 1 goto failed
 
 echo.
@@ -137,7 +154,7 @@ windres -I "%SRC%" -DWITH_PAYLOAD "%SRC%\Setup.rc" -O coff -o "%OUT%\SetupFull.r
 if errorlevel 1 goto failed
 gcc %CFLAGS% -o "%OUT%\MonsterRPG Setup (standalone).exe" ^
     "%SRC%\Setup.c" "%SRC%\Common.c" "%SRC%\Zip.c" "%SRC%\Unzip.c" ^
-    "%OUT%\SetupFull.res" %LIBS% -lz
+    "%OUT%\SetupFull.res" %LIBS% %ZLIB%
 if errorlevel 1 goto failed
 
 echo.
@@ -157,3 +174,4 @@ echo.
 pause
 endlocal
 exit /b 1
+

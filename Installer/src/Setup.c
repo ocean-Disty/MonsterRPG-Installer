@@ -1472,6 +1472,12 @@ static void StartInstall(HWND dlg, Ctx *c)
         return;
     }
 
+    /* Last thing before anything is written. Copying over a .dll that the
+     * running game has open fails, and it fails halfway through, which leaves
+     * a folder that is part old version and part new. */
+    if (!EnsureGameClosed(dlg, folder, SETUP_TITLE, L"installed"))
+        return;
+
     wcsncpy(c->gameDir, folder, (sizeof(c->gameDir) / sizeof(c->gameDir[0])) - 1);
     c->gameDir[(sizeof(c->gameDir) / sizeof(c->gameDir[0])) - 1] = L'\0';
 

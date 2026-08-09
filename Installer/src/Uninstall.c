@@ -646,6 +646,13 @@ static INT_PTR CALLBACK UninstallProc(HWND dlg, UINT msg, WPARAM wp, LPARAM lp)
                     UNINSTALL_TITLE, MB_YESNO | MB_ICONQUESTION) != IDYES)
                 return TRUE;
 
+            /* Asked after they have said yes, not before, so nobody is
+             * quizzed about closing their game until they have decided they
+             * actually want this. The mod DLLs are loaded into Blockland while
+             * it runs, and Windows will not delete a file that is open. */
+            if (!EnsureGameClosed(dlg, c->gameDir, UNINSTALL_TITLE, L"removed"))
+                return TRUE;
+
             c->removing = TRUE;
             c->failures = 0;
             c->refused  = 0;

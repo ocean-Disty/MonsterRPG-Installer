@@ -206,6 +206,42 @@ BOOL    GetDesktopDir(wchar_t *dst, size_t cch);
 BOOL    GetStartMenuProgramsDir(wchar_t *dst, size_t cch);
 
 /* ---------------------------------------------------------------------------
+ *  Is the game open?
+ *
+ *  Blockland loads the mods' DLL files into itself while it runs, and Windows
+ *  will not let anything delete or overwrite a file that a running program has
+ *  open. So installing or removing while the game is up half works: the
+ *  folders empty out except for the one .dll that matters, and the person is
+ *  left with a broken install and a list of failures.
+ *
+ *  Both programs check first and offer to close it.
+ * ------------------------------------------------------------------------ */
+
+/* The process id of a Blockland.exe running out of this exact game folder, or
+ * 0 if there is none. Matched on the full path, so somebody with two copies of
+ * Blockland installed is not told to close the one they are playing. */
+DWORD   FindRunningGame(const wchar_t *gameDir);
+
+/* Asks that process to close the way clicking its X would, then waits up to
+ * waitMs for it to go. TRUE if it has.
+ *
+ * Deliberately never forces it. A forced close loses whatever the player was
+ * building, and no installer is worth that; if the game ignores the request,
+ * the answer is to say so and let them deal with it. */
+BOOL    AskGameToClose(DWORD pid, DWORD waitMs);
+
+/* The whole business in one call, for both programs to use.
+ *
+ * If Blockland is open in this folder, explains why that is a problem and
+ * offers to close it. Returns TRUE when it is safe to carry on, FALSE when
+ * the caller should stop and let the person deal with it.
+ *
+ * `what` is the word for what is about to happen, "installed" or "removed",
+ * so the question reads as a sentence either way. */
+BOOL    EnsureGameClosed(HWND owner, const wchar_t *gameDir,
+                         const wchar_t *title, const wchar_t *what);
+
+/* ---------------------------------------------------------------------------
  *  Running only once at a time
  *
  *  Two copies of Setup copying the same files into the same folder at the same

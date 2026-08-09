@@ -9,6 +9,7 @@
 
 #include <shlobj.h>
 #include <objbase.h>
+#include <tlhelp32.h>
 #include <stdio.h>
 #include <string.h>
 #include <wchar.h>
@@ -624,6 +625,188 @@ BOOL CopyTree(const wchar_t *src, const wchar_t *dst, CopyCallback cb, void *use
     if (!DirExists(src))
         return FALSE;
     return CopyTreeInner(src, dst, L"", cb, user);
+}
+
+/* ---------------------------------------------------------------------------
+ *  Is the game open?
+ * ------------------------------------------------------------------------ */
+
+/* The full path of a running process, or FALSE if it cannot be had.
+ *
+ * QueryFullProcessImageNameW is asked for by name rather than called directly
+ * so this still builds and still runs whatever the toolchain headers think the
+ * minimum Windows version is. If it is missing, the caller falls back to
+ * matching on the file name alone. */
+static BOOL PathOfProcess(DWORD pid, wchar_t *out, DWORD cch)
+{
+    typedef BOOL (WINAPI *QueryFullProcessImageNameW_t)(HANDLE, DWORD, LPWSTR, PDWORD);
+    static QueryFullProcessImageNameW_t queryName = NULL;
+    static BOOL looked = FALSE;
+
+    HANDLE proc;
+    BOOL ok = FALSE;
+
+    if (!looked) {
+        HMODULE k32 = GetModuleHandleW(L"kernel32.dll");
+        if (k32 != NULL)
+            queryName = (QueryFullProcessImageNameW_t)(void *)
+                        GetProcAddress(k32, "QueryFullProcessImageNameW");
+        looked = TRUE;
+    }
+    if (queryName == NULL)
+        return FALSE;
+
+    /* LIMITED_INFORMATION is enough to ask a process where it lives, and does
+     * not need the rights that reading its memory would. */
+    proc = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, FALSE, pid);
+    if (proc == NULL)
+        return FALSE;
+
+    ok = queryName(proc, 0, out, &cch);
+    CloseHandle(proc);
+    return ok;
+}
+
+DWORD FindRunningGame(const wchar_t *gameDir)
+{
+    wchar_t wanted[MAX_PATH * 2];
+    HANDLE snap;
+    PROCESSENTRY32W entry;
+    DWORD found = 0;
+
+    if (gameDir == NULL || gameDir[0] == L'\0')
+        return 0;
+
+    PathJoin(wanted, sizeof(wanted) / sizeof(wanted[0]), gameDir, GAME_EXE);
+
+    snap = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
+    if (snap == INVALID_HANDLE_VALUE)
+        return 0;
+
+    entry.dwSize = sizeof(entry);
+    if (Process32FirstW(snap, &entry)) {
+        do {
+            wchar_t path[MAX_PATH * 2];
+
+            if (!EqualsNoCase(entry.szExeFile, GAME_EXE))
+                continue;
+
+            if (PathOfProcess(entry.th32ProcessID, path, MAX_PATH * 2)) {
+                /* Two copies of Blockland is a normal thing to have. Only the
+                 * one being installed into is any of our business. */
+                if (!EqualsNoCase(path, wanted))
+                    continue;
+            }
+
+            found = entry.th32ProcessID;
+            break;
+        } while (Process32NextW(snap, &entry));
+    }
+
+    CloseHandle(snap);
+    return found;
+}
+
+static BOOL StillAlive(DWORD pid)
+{
+    HANDLE h = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, FALSE, pid);
+    DWORD code = 0;
+    BOOL alive;
+
+    if (h == NULL)
+        return FALSE;               /* gone, or not ours to ask about */
+
+    alive = GetExitCodeProcess(h, &code) && code == STILL_ACTIVE;
+    CloseHandle(h);
+    return alive;
+}
+
+/* Posts WM_CLOSE to every top-level window the process owns. */
+static BOOL CALLBACK CloseWindowsOf(HWND wnd, LPARAM param)
+{
+    DWORD owner = 0;
+
+    GetWindowThreadProcessId(wnd, &owner);
+    if (owner == (DWORD)param)
+        PostMessageW(wnd, WM_CLOSE, 0, 0);
+
+    return TRUE;
+}
+
+BOOL AskGameToClose(DWORD pid, DWORD waitMs)
+{
+    HANDLE proc;
+    DWORD waited;
+
+    if (pid == 0)
+        return TRUE;
+
+    proc = OpenProcess(SYNCHRONIZE, FALSE, pid);
+
+    EnumWindows(CloseWindowsOf, (LPARAM)pid);
+
+    if (proc == NULL) {
+        /* No rights to wait on it, so fall back to asking whether it is still
+         * in the process list at all. */
+        for (waited = 0; waited < waitMs; waited += 250) {
+            Sleep(250);
+            if (!StillAlive(pid))
+                return TRUE;
+        }
+        return !StillAlive(pid);
+    }
+
+    {
+        DWORD rc = WaitForSingleObject(proc, waitMs);
+        CloseHandle(proc);
+        return rc == WAIT_OBJECT_0;
+    }
+}
+
+BOOL EnsureGameClosed(HWND owner, const wchar_t *gameDir,
+                      const wchar_t *title, const wchar_t *what)
+{
+    wchar_t message[1024];
+    DWORD pid;
+    int answer;
+
+    pid = FindRunningGame(gameDir);
+    if (pid == 0)
+        return TRUE;
+
+    _snwprintf(message, sizeof(message) / sizeof(message[0]),
+        L"Blockland is open at the moment.\r\n"
+        L"\r\n"
+        L"MonsterRPG cannot be %s while the game is running. Windows will not "
+        L"let anything change files that an open program is using, and the mod "
+        L"files are exactly the ones Blockland has open.\r\n"
+        L"\r\n"
+        L"Close Blockland now?\r\n"
+        L"\r\n"
+        L"Yes  -  close it for me. Anything you have not saved in the game "
+        L"will be lost, the same as closing it yourself.\r\n"
+        L"No   -  leave it alone. Close it yourself and try again.",
+        what);
+    message[(sizeof(message) / sizeof(message[0])) - 1] = L'\0';
+
+    answer = MessageBoxW(owner, message, title, MB_YESNO | MB_ICONWARNING);
+    if (answer != IDYES)
+        return FALSE;
+
+    if (AskGameToClose(pid, 15000))
+        return TRUE;
+
+    /* It was asked and did not go. Forcing it from here would throw away
+     * whatever the player was building, which is a worse outcome than making
+     * them close it themselves. */
+    MessageBoxW(owner,
+        L"Blockland did not close.\r\n"
+        L"\r\n"
+        L"It may be asking you something, or be busy. Switch to it, close it "
+        L"yourself, then try again.",
+        title, MB_OK | MB_ICONINFORMATION);
+
+    return FALSE;
 }
 
 /* ---------------------------------------------------------------------------
