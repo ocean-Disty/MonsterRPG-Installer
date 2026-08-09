@@ -1,0 +1,110 @@
+//--- OBJECT WRITE BEGIN ---
+new GuiControl(MonsterRPGx_RenameGui) {
+   profile = "GuiDefaultProfile";
+   horizSizing = "right";
+   vertSizing = "bottom";
+   position = "0 0";
+   extent = "1024 768";
+   minExtent = "8 2";
+   enabled = "1";
+   visible = "1";
+   clipToParent = "1";
+
+   new GuiWindowCtrl() {
+      profile = "MonsterRPGx_BurntGlassBlue_WindowProfile";
+      horizSizing = "center";
+      vertSizing = "center";
+      position = "358 308";
+      extent = "307 152";
+      minExtent = "8 2";
+      enabled = "1";
+      visible = "1";
+      clipToParent = "1";
+      text = "Party Name";
+      maxLength = "255";
+      resizeWidth = "0";
+      resizeHeight = "0";
+      canMove = "0";
+      canClose = "1";
+      canMinimize = "0";
+      canMaximize = "0";
+      minSize = "50 50";
+      closeCommand = "canvas.popDialog(MonsterRPGx_RenameGui);";
+
+      new GuiTextCtrl(MonsterRPGx_RenameText) {
+         profile = "MonsterRPGx_BurntGlassBlue_TextProfile";
+         horizSizing = "right";
+         vertSizing = "bottom";
+         position = "27 57";
+         extent = "78 18";
+         minExtent = "8 2";
+         enabled = "1";
+         visible = "1";
+         clipToParent = "1";
+         text = "Enter Name:";
+         maxLength = "255";
+      };
+      new GuiTextEditCtrl(MonsterRPGx_Party_Name) {
+         profile = "MonsterRPGx_BurntGlassBlue_TextEditProfile";
+         horizSizing = "right";
+         vertSizing = "bottom";
+         position = "112 54";
+         extent = "168 23";
+         minExtent = "8 2";
+         enabled = "1";
+         visible = "1";
+         clipToParent = "1";
+         maxLength = "23";
+         historySize = "0";
+         password = "0";
+         tabComplete = "0";
+         sinkAllKeyEvents = "0";
+      };
+      new GuiBitmapButtonCtrl() {
+         profile = "MonsterRPGx_BurntGlassBlue_ButtonProfile";
+         horizSizing = "left";
+         vertSizing = "top";
+         position = "178 98";
+         extent = "91 38";
+         minExtent = "8 2";
+         enabled = "1";
+         visible = "1";
+         clipToParent = "1";
+         command = "MonsterRPGx_FormParty();";
+         text = "Enter >>";
+         groupNum = "-1";
+         buttonType = "PushButton";
+         bitmap = "base/client/ui/button2";
+         lockAspectRatio = "0";
+         alignLeft = "0";
+         alignTop = "0";
+         overflowImage = "0";
+         mKeepCached = "0";
+         mColor = "255 255 255 255";
+      };
+      new GuiBitmapButtonCtrl() {
+         profile = "MonsterRPGx_BurntGlassBlue_ButtonProfile";
+         horizSizing = "left";
+         vertSizing = "top";
+         position = "38 98";
+         extent = "91 38";
+         minExtent = "8 2";
+         enabled = "1";
+         visible = "1";
+         clipToParent = "1";
+         command = "canvas.popDialog(MonsterRPGx_RenameGui);";
+         accelerator = "escape";
+         text = "<< Cancel";
+         groupNum = "-1";
+         buttonType = "PushButton";
+         bitmap = "base/client/ui/button2";
+         lockAspectRatio = "0";
+         alignLeft = "0";
+         alignTop = "0";
+         overflowImage = "0";
+         mKeepCached = "0";
+         mColor = "255 255 255 255";
+      };
+   };
+};
+//--- OBJECT WRITE END ---

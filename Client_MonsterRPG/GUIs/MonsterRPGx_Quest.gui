@@ -1,0 +1,170 @@
+// MonsterRPGx_Quest.gui - the Quest tab, now an EDITABLE .gui (was fully script-built).
+// Edit layout/background/scroll frame here; MRPG_buildQuest() (RPGPanels.cs) slots it
+// next to the other tab swatches and sets the title text. Quest rows are server-fed
+// (MRPG_renderQuests) into MRPG_QuestContent by name.
+//--- OBJECT WRITE BEGIN ---
+new GuiSwatchCtrl(MonsterRPGx_Quest) {
+   profile = "GuiDefaultProfile";
+   horizSizing = "right";
+   vertSizing = "bottom";
+   position = "-27 13";
+   extent = "535 548";
+   minExtent = "8 2";
+   enabled = "1";
+   visible = "0";
+   clipToParent = "1";
+   color = "0 0 0 0";
+
+   new GuiBitmapCtrl(MRPG_QuestBitmap) {
+      profile = "GuiDefaultProfile";
+      horizSizing = "right";
+      vertSizing = "bottom";
+      position = "71 74";
+      extent = "454 454";
+      minExtent = "8 2";
+      enabled = "1";
+      visible = "1";
+      clipToParent = "1";
+      bitmap = "./Popup_Elements/Popup_Gold_bg";
+      wrap = "0";
+      lockAspectRatio = "0";
+      alignLeft = "0";
+      alignTop = "0";
+      overflowImage = "0";
+      keepCached = "0";
+      mColor = "255 255 255 255";
+      mMultiply = "0";
+
+      new GuiBitmapCtrl(MRPG_QuestPanel) {
+         profile = "GuiDefaultProfile";
+         horizSizing = "right";
+         vertSizing = "bottom";
+         position = "4 8";
+         extent = "446 432";
+         minExtent = "8 2";
+         enabled = "1";
+         visible = "1";
+         clipToParent = "1";
+         bitmap = "./Popup_Elements/RTS_bar";
+         wrap = "0";
+         lockAspectRatio = "0";
+         alignLeft = "0";
+         alignTop = "0";
+         overflowImage = "0";
+         keepCached = "0";
+         mColor = "255 255 255 255";
+         mMultiply = "0";
+      };
+      new GuiScrollCtrl(MRPG_QuestScroll) {
+         profile = "MRPG_PanelScrollProfile";
+         horizSizing = "right";
+         vertSizing = "bottom";
+         position = "24 40";
+         extent = "411 332";
+         minExtent = "8 2";
+         enabled = "1";
+         visible = "1";
+         clipToParent = "1";
+         willFirstRespond = "1";
+         hScrollBar = "alwaysOff";
+         vScrollBar = "dynamic";
+         constantThumbHeight = "0";
+         childMargin = "0 0";
+
+         new GuiSwatchCtrl(MRPG_QuestContent) {
+            profile = "GuiDefaultProfile";
+            horizSizing = "right";
+            vertSizing = "bottom";
+            position = "0 0";
+            extent = "395 332";
+            minExtent = "8 2";
+            enabled = "1";
+            visible = "1";
+            clipToParent = "1";
+            color = "0 0 0 0";
+         };
+      };
+      new GuiSwatchCtrl(MRPG_QuestDetail) {
+         profile = "GuiDefaultProfile";
+         horizSizing = "right";
+         vertSizing = "bottom";
+         position = "24 378";
+         extent = "411 58";
+         minExtent = "8 2";
+         enabled = "1";
+         visible = "0";
+         clipToParent = "1";
+         color = "18 14 10 240";
+
+         new GuiMLTextCtrl(MRPG_QuestDetailText) {
+            profile = "GuiCustomMLTextProfile";
+            text = "";
+            horizSizing = "right";
+            vertSizing = "bottom";
+            position = "8 4";
+            extent = "395 50";
+            minExtent = "8 2";
+            enabled = "1";
+            visible = "1";
+            clipToParent = "1";
+            lineSpacing = "1";
+            allowColorChars = "1";
+            maxChars = "-1";
+            maxBitmapHeight = "-1";
+            selectable = "0";
+            autoResize = "0";
+         };
+      };
+   };
+   new GuiBitmapCtrl() {
+      profile = "GuiDefaultProfile";
+      horizSizing = "right";
+      vertSizing = "bottom";
+      position = "64 20";
+      extent = "469 67";
+      minExtent = "8 2";
+      enabled = "1";
+      visible = "1";
+      clipToParent = "1";
+      bitmap = "./Popup_Elements/Title_Frame_long.png";
+      wrap = "0";
+      lockAspectRatio = "0";
+      alignLeft = "0";
+      alignTop = "0";
+      overflowImage = "0";
+      keepCached = "0";
+      mColor = "255 255 255 255";
+      mMultiply = "0";
+   };
+   new GuiMLTextCtrl(MonsterRPGx_QuestTitle) {
+      profile = "GuiMLTextProfile";
+      text = "<just:center><color:DAD9DD><font:verdana bold:38>Quests";
+      horizSizing = "right";
+      vertSizing = "bottom";
+      position = "64 36";
+      extent = "469 38";
+      minExtent = "8 2";
+      enabled = "1";
+      visible = "1";
+      clipToParent = "1";
+      lineSpacing = "2";
+      allowColorChars = "1";
+      maxChars = "-1";
+      maxBitmapHeight = "-1";
+      selectable = "0";
+      autoResize = "0";
+   };
+   new GuiMouseEventCtrl(MRPG_QuestDragMouse) {
+      profile = "GuiDefaultProfile";
+      horizSizing = "right";
+      vertSizing = "bottom";
+      position = "64 20";
+      extent = "469 67";
+      minExtent = "8 2";
+      enabled = "1";
+      visible = "1";
+      clipToParent = "1";
+      lockMouse = "1";
+   };
+};
+//--- OBJECT WRITE END ---

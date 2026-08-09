@@ -1,0 +1,3 @@
+Title: Monster RPG GUI
+Author: [GSF]Ghost & Disty
+SystemRPGs morphed into its own gui for mrpg

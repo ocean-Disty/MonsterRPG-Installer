@@ -1,0 +1,35 @@
+BLTickRate - TickShift 3, 8 ms/tick, 125.00 tps
+image base 00E80000, size 004F2000
+1/TickMs = 0.12500000 at 01510000
+
+  ok       TickSec (float, 12 refs)           rva 35E9D8
+  ok       TickSec (double, 16 refs)          rva 35EB70
+  ok       TickSec (inline literal)           rva 0DD410
+  ok       advanceTime A: and ~TickMask       rva 0BD0DA
+  ok       advanceTime A: shr TickShift       rva 0BD0E5
+  ok       advanceTime B: lea +TickMask       rva 0BD3F5
+  ok       advanceTime B: and ~TickMask       rva 0BD3FC
+  ok       advanceTime B: and TickMask        rva 0BD4A5
+  ok       advanceTime A: mLastTick += TickMs rva 0BD10F
+  ok       advanceTime B: mLastTick += TickMs rva 0BD713
+  ok       advanceTime B: elapsed >= TickMs (1) rva 0BD53D
+  ok       advanceTime B: elapsed >= TickMs (2) rva 0BD57F
+  ok       advanceTime B: elapsed >= TickMs (3) rva 0BD87D
+  ok       advanceTime A: fmul 1/TickMs       rva 0BD1D7
+  ok       advanceTime B: fmul 1/TickMs       rva 0BD4C8
+  ok       render: elapsed ticks              rva 0883F9
+  ok       render: interpolation fraction     rva 0B99BD
+  ok       lifetime max ticks                 rva 0E8901
+  ok       lifetime ms scale                  rva 0E8908
+  ok       armingDelay max ticks              rva 0E894B
+  ok       armingDelay ms scale               rva 0E8952
+  ok       fadeDelay max ticks                rva 0E8995
+  ok       fadeDelay ms scale                 rva 0E899C
+  ok       clamp PacketRateToServer           rva 1919DD
+  ok       clamp PacketRateToClient           rva 191A02
+
+applied 25/25 patches - the game is now running at 125.00 tps
+
+Reminder: $Pref::Net::PacketRateToClient / ToServer are also clamped
+to 32 by the compiled default scripts. Raise them to 128 after the game
+has finished loading or the extra ticks never reach the network.

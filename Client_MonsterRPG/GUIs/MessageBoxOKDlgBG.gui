@@ -1,0 +1,98 @@
+//--- OBJECT WRITE BEGIN ---
+new GuiControl(MessageBoxOKDlgBG) {
+   profile = "GuiDefaultProfile";
+   horizSizing = "width";
+   vertSizing = "height";
+   position = "0 0";
+   extent = "1024 768";
+   minExtent = "8 8";
+   enabled = "1";
+   visible = "1";
+   clipToParent = "1";
+
+   new GuiWindowCtrl(MBOKFrameBG) {
+      profile = "MonsterRPGx_BurntGlassBlue_WindowProfile";
+      horizSizing = "left";
+      vertSizing = "bottom";
+      position = "209 180";
+      extent = "551 362";
+      minExtent = "8 2";
+      enabled = "1";
+      visible = "1";
+      clipToParent = "1";
+      maxLength = "255";
+      resizeWidth = "0";
+      resizeHeight = "0";
+      canMove = "1";
+      canClose = "1";
+      canMinimize = "0";
+      canMaximize = "0";
+      minSize = "50 50";
+      closeCommand = "canvas.popdialog(MessageBoxOKDlgBG);";
+
+      new GuiBitmapCtrl(MBOKBackDrop) {
+         profile = "GuiDefaultProfile";
+         horizSizing = "right";
+         vertSizing = "bottom";
+         position = "5 23";
+         extent = "541 335";
+         minExtent = "8 2";
+         enabled = "1";
+         visible = "1";
+         clipToParent = "1";
+         bitmap = "./genericBG";
+         wrap = "1";
+         lockAspectRatio = "1";
+         alignLeft = "0";
+         alignTop = "1";
+         overflowImage = "0";
+         keepCached = "0";
+         mColor = "255 255 255 255";
+         mMultiply = "0";
+
+         new GuiMLTextCtrl(MBOKTextBG) {
+            profile = "GuiTextProfile";
+            horizSizing = "center";
+            vertSizing = "bottom";
+            position = "0 0";
+            extent = "538 14";
+            minExtent = "8 8";
+            enabled = "1";
+            visible = "1";
+            clipToParent = "1";
+            lineSpacing = "2";
+            allowColorChars = "0";
+            maxChars = "1020";
+            maxBitmapHeight = "-1";
+            selectable = "1";
+            autoResize = "1";
+            doFontOutline = 1;
+            fontOutlineColor = "0 0 0 255";
+         };
+         new GuiBitmapButtonCtrl() {
+            profile = "MonsterRPGx_BurntGlassBlue_ButtonProfile";
+            horizSizing = "center";
+            vertSizing = "top";
+            position = "225 289";
+            extent = "91 38";
+            minExtent = "8 2";
+            enabled = "1";
+            visible = "1";
+            clipToParent = "1";
+            command = "MessageCallback(MessageBoxOKDlgBG,MessageBoxOKDlgBG.callback);";
+            accelerator = "enter";
+            text = "OK";
+            groupNum = "-1";
+            buttonType = "PushButton";
+            bitmap = "base/client/ui/button2";
+            lockAspectRatio = "0";
+            alignLeft = "0";
+            alignTop = "0";
+            overflowImage = "0";
+            mKeepCached = "0";
+            mColor = "255 255 255 255";
+         };
+      };
+   };
+};
+//--- OBJECT WRITE END ---

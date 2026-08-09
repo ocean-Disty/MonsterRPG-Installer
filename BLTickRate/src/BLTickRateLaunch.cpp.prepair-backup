@@ -1,0 +1,122 @@
+//////////////////////////////////////////////////
+// BLTickRateLaunch — starts Blockland with BLTickRate.dll attached
+//
+// The DLL has to be in place before the engine registers its classes, so this
+// creates the process SUSPENDED, injects the DLL, and only then lets it run.
+// That is the same timing as editing Blockland.exe's import table with Stud_PE
+// (which is how CompMix's original was loaded), except nothing on disk is
+// touched, so "uninstalling" is just not using this launcher.
+//
+//   usage: BLTickRateLaunch.exe <Blockland.exe> <BLTickRate.dll> <workdir> [game args...]
+//
+// Players do not run this directly — BLTickRate.bat does it for you.
+
+#include <windows.h>
+#include <stdio.h>
+#include <string.h>
+
+int main(int argc, char **argv)
+{
+    if(argc < 4)
+    {
+        printf("usage: BLTickRateLaunch.exe <exe> <dll> <workdir> [args...]\n");
+        return 1;
+    }
+
+    const char *exe = argv[1];
+    const char *dll = argv[2];
+    const char *cwd = argv[3];
+
+    if(GetFileAttributesA(exe) == INVALID_FILE_ATTRIBUTES)
+    {
+        printf("ERROR: cannot find Blockland.exe at:\n  %s\n", exe);
+        return 1;
+    }
+    if(GetFileAttributesA(dll) == INVALID_FILE_ATTRIBUTES)
+    {
+        printf("ERROR: cannot find BLTickRate.dll at:\n  %s\n", dll);
+        return 1;
+    }
+
+    // Blockland skips its first argument on release builds, so anything passed
+    // through has to sit behind a placeholder or the game never sees it.
+    char cmd[4096];
+    _snprintf(cmd, sizeof(cmd), "\"%s\"", exe);
+    for(int i = 4; i < argc; i++)
+    {
+        strncat(cmd, " ", sizeof(cmd) - strlen(cmd) - 1);
+        strncat(cmd, argv[i], sizeof(cmd) - strlen(cmd) - 1);
+    }
+
+    STARTUPINFOA si;
+    PROCESS_INFORMATION pi;
+    ZeroMemory(&si, sizeof(si));
+    si.cb = sizeof(si);
+    ZeroMemory(&pi, sizeof(pi));
+
+    // DETACHED_PROCESS matters as much as CREATE_SUSPENDED here.
+    //
+    // Without it the game inherits this launcher's console. When BLTickRate.bat
+    // is double-clicked, cmd exits the moment the batch finishes, the console
+    // is destroyed, and every process still attached to it is torn down —
+    // so the game starts, patches correctly, and then vanishes a second later.
+    // It only "works" when something keeps that console alive, which is why it
+    // survives when run from an already-open terminal and dies when clicked.
+    //
+    // Detaching also suits both modes: a GUI client wants no console at all,
+    // and a dedicated server allocates its own with enableWinConsole().
+    if(!CreateProcessA(exe, cmd, NULL, NULL, FALSE,
+                       CREATE_SUSPENDED | DETACHED_PROCESS, NULL, cwd, &si, &pi))
+    {
+        printf("ERROR: could not start Blockland (windows error %lu)\n", GetLastError());
+        return 1;
+    }
+
+    // Push the DLL path into the target and load it from a remote thread.
+    size_t len = strlen(dll) + 1;
+    void *remote = VirtualAllocEx(pi.hProcess, NULL, len,
+                                  MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
+    if(!remote || !WriteProcessMemory(pi.hProcess, remote, dll, len, NULL))
+    {
+        printf("ERROR: could not write into the game process (%lu)\n", GetLastError());
+        TerminateProcess(pi.hProcess, 1);
+        return 1;
+    }
+
+    // kernel32 sits at the same address in every process of this architecture,
+    // so our own LoadLibraryA is valid in the target.
+    HMODULE k32 = GetModuleHandleA("kernel32.dll");
+    FARPROC loadLibrary = GetProcAddress(k32, "LoadLibraryA");
+
+    HANDLE thread = CreateRemoteThread(pi.hProcess, NULL, 0,
+                                       (LPTHREAD_START_ROUTINE)loadLibrary,
+                                       remote, 0, NULL);
+    if(!thread)
+    {
+        printf("ERROR: could not inject (%lu)\n", GetLastError());
+        TerminateProcess(pi.hProcess, 1);
+        return 1;
+    }
+
+    WaitForSingleObject(thread, 30000);
+
+    DWORD module = 0;
+    GetExitCodeThread(thread, &module);
+    CloseHandle(thread);
+
+    if(!module)
+    {
+        printf("ERROR: BLTickRate.dll failed to load. Is it 32-bit?\n");
+        TerminateProcess(pi.hProcess, 1);
+        return 1;
+    }
+
+    ResumeThread(pi.hThread);
+
+    printf("Blockland started with BLTickRate attached (pid %lu).\n", pi.dwProcessId);
+    printf("Check BLTickRate.log next to the DLL to confirm it applied.\n");
+
+    CloseHandle(pi.hThread);
+    CloseHandle(pi.hProcess);
+    return 0;
+}

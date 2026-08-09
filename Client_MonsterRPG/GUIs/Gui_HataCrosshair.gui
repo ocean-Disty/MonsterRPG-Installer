@@ -1,0 +1,34 @@
+//--- OBJECT WRITE BEGIN ---
+new GuiControl(Hata_Crosshair) {
+   profile = "GuiDefaultProfile";
+   horizSizing = "right";
+   vertSizing = "bottom";
+   position = "0 0";
+   extent = getWord($pref::Video::resolution,0) SPC getWord($pref::Video::resolution,1);
+   minExtent = "8 2";
+   enabled = "1";
+   visible = "1";
+   clipToParent = "1";
+
+   new GuiBitmapCtrl() {
+      profile = "GuiDefaultProfile";
+      horizSizing = "center";
+      vertSizing = "center";
+      position = (getWord($pref::Video::resolution,0)/2)-16 SPC ((getWord($pref::Video::resolution,1)/2)-(getWord($pref::Video::resolution,1)/9)-16);
+      extent = "32 32";
+      minExtent = "32 32";
+      enabled = "1";
+      visible = "1";
+      clipToParent = "1";
+      bitmap = "base/client/ui/crossHair";
+      wrap = "0";
+      lockAspectRatio = "1";
+      alignLeft = "0";
+      alignTop = "0";
+      overflowImage = "0";
+      keepCached = "0";
+      mColor = "255 255 255 255";
+      mMultiply = "0";
+   };
+};
+//--- OBJECT WRITE END ---

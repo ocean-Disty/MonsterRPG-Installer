@@ -1,0 +1,2 @@
+Title: Burnt Glass Gold
+Author: Svenne (blue original); recoloured by Tools/make_mrpg_gold_theme.py --preset antique

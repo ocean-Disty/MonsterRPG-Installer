@@ -1,0 +1,387 @@
+ ▐▛███▜▌   Claude Code v2.1.224
+▝▜█████▛▘  Opus 5 · Claude Pro
+  ▘▘ ▝▝    ~\OneDrive\Documents\MonsterRPGBlockland\Blockland\Add-Ons\Clien…
+
+
+> /clear                                                                        
+
+> I will list bugs can you plan for how we're going to fix them. Number one is  
+  Client_MonsterRPG doesn't scale colbs inner fill from hp/mana maybe even exp  
+  properly when above 1080p. Number two is character screen selection has full  
+  black background and isn't centered, we want a better representation. Number  
+  three is a client out of a few didn't respawn with a level 1 starter weapon   
+  properly. Number four bots don't take hits really anymore, the collision      
+  needs to be redone with projectile/swordimage/swordbot (weapon_dueling_sword) 
+  that is a big update. Number five is hair is a bit buggy doesn't always fit   
+  heads properly. Number six is face from character selection doesn't apply     
+  from Client_MonsterRPG. Aka its not visible ingame. Please make a plan for    
+  these fixes.                                                                  
+
+● I'll investigate each of these areas in the codebase before planning. Let me
+  start.
+
+  Listed 4 directories, ran 4 shell commands (ctrl+o to expand)
+
+● Now let me dig into each bug. Starting with the HUD colb scaling.
+
+  Searched for 7 patterns, read 8 files, ran 34 shell commands (ctrl+o to expand)
+
+● I've traced all six through the code. Here's what I found and how I'd fix
+  each.
+
+  ---
+  Fix Plan — 6 bugs
+
+  Suggested order
+
+  #2 → #1 → #6 → #5 → #3 → #4. The first five are contained; #4 is a system
+  rework and should land on its own so a regression is attributable.
+
+  ---
+  Bug 2 — Character screen: black background, not centered
+
+  Confidence: certain. Root cause found.
+
+  Add-Ons/Client_MonsterRPG/SCRIPTS/Client/CharacterScreen.cs:1734-1754
+
+  %dlg = new GuiControl(MRPG_CharDlg) { horizSizing="width";
+  vertSizing="height"; extent="1024 768"; }
+  %bg  = new GuiSwatchCtrl(MRPG_CharBg){ horizSizing="width";
+  vertSizing="height"; extent="1024 768"; color="8 10 14 255"; }
+
+  It's pushed raw at :2167 — canvas.pushDialog(MRPG_CharDlg) — with no scaling
+  pass. Canvas resizes root controls to the full screen, so %dlg and %bg stretch
+  (width/height sizing) while every child uses horizSizing="right" / 
+  vertSizing="bottom", which is fixed-position. The portrait (44,46) and panel
+  (452,22) stay pinned to the top-left of a full-screen near-black fill. That is
+  exactly "full black background and isn't centered."
+
+  Fix: give the screen the same treatment the HUD gets. Wrap the content in a
+  1024×768 GuiSwatchCtrl (CS_Frame) holding everything except MRPG_CharBg, then
+  on onWake / resetCanvas:
+  - scale by mClampF(min(resX/1024, resY/768), 1.0, 2.5) — uniform, so the gold
+  frames and the GuiObjectView don't skew,
+  - center the frame on the canvas,
+  - reuse GuiControl::UIS_applyScaling (GUIFunctions.cs:1558) rather than
+  writing a second scaler, setting CS_Frame.UIS_centerPosition = "512 384".
+
+  For "a better representation" instead of the flat 8 10 14 fill: keep an opaque
+  base layer (it exists to hide the half-loaded world — see the comment at
+  :1739), and layer a vignette + the wood/parchment art already shipped
+  (GUIs/avatar_wood_bg.png, Vignette1.png) on top of it, with the scaled content
+  frame centered over that. I'll confirm the exact composition with you before
+  building it, since that one is taste rather than a defect.
+
+  Verify: open at 1024×768, 1920×1080, 2560×1440, 3840×2160 and one ultrawide;
+  the frame stays centered and square in all.
+
+  ---
+  Bug 1 — Colb HP/Mana/Exp fill doesn't scale above 1080p
+
+  Confidence: high on the mechanism; one diagnostic step to confirm which of two
+  paths bites first.
+
+  The fill works by moving a clip swatch down and the colb bitmap up by the same
+  amount, reading precomputed values off the control:
+
+  GUIFunctions.cs:1595-1735 — updateHPBitmap / updateManaBitmap /
+  updateExpBitmap read HP_Percent.newScaledPos / .newScaledExt, which are
+  written only inside UIS_applyScaling (:1572-1573).
+
+  Two real defects:
+
+  1. The fill is never re-applied after a rescale. resetCanvas (Package.cs:238)
+  schedules scaleNewCanvas → UIS_applyScaling rewrites newScaledPos/Ext and
+  resizes the colbs back to full. But updateHPBitmap early-outs on
+  $MonsterRPG::Client::PrevHPPercent != %HPPercent || !$...::SetHPBitmap
+  (:1596), and those flags are cleared only on disconnect (Package.cs:527-529).
+  So after any resolution change the fill geometry is stale/full until HP
+  happens to change. Above 1080p the discrepancy per percentage point is larger,
+  which is why it reads as "doesn't scale."
+  2. The Exp loops write pre-change coordinates. updateExpBitmap (:1718-1730)
+  snapshots %x %y %w %h and hands them to RPGExpFadeLoop → RPGExpLoop, a 1 ms
+  reschedule chain (:1738, :1768). A rescale mid-loop keeps stamping
+  old-resolution pixels. Worse, RPGExpLoop reads its starting width from
+  Exp_Percent.getExtent() — the already mutated extent — so the baseline drifts.
+  And PrevExpPercent is only assigned inside if(!$...::inExpLoop) (:1732), so
+  updates arriving during a loop are dropped permanently.
+
+  Fix:
+  - Store the fill as a normalized 0..1 value on each bar (HP_Percent.fillFrac),
+  and add MRPG_reapplyBars() that recomputes geometry from the current
+  newScaledPos/Ext. Call it at the end of scaleNewCanvas (GUIFunctions.cs:3668)
+  and clear SetHPBitmap/SetManaBitmap/SetExpBitmap there.
+  - Add a guard at the top of each update*Bitmap: if newScaledExt $= "" (scaling
+  hasn't run yet), call scaleNewCanvas first — right now that path calls
+  resize(,,,) with empty args and collapses the control.
+  - Make the Exp animation resolution-agnostic: animate a fraction, and convert
+  to pixels inside the loop tick from the live newScaledExt. Also move
+  PrevExpPercent assignment out of the inExpLoop branch and let a new target
+  retarget the running loop instead of being discarded.
+  - Use %bitmapHeight (not %swatchHeight) for the bitmap's counter-offset at
+  :1622, :1642, :1677, :1697 — they're equal at design scale but diverge under
+  independent rounding.
+  - Round with mFloor at the resize call sites; resize() truncates and the
+  truncation currently accumulates through the parent chain.
+
+  Diagnostic first (2 min): in-game at 1440p, echo(HP_Percent.newScaledPos SPC 
+  HP_Percent.newScaledExt SPC HP_Percent.getPosition() SPC 
+  HP_Percent.getExtent()); before and after a resolution change. That
+  distinguishes "stale cache" from "scalar wrong."
+
+  ---
+  Bug 6 — Character-screen face not visible in game
+
+  Confidence: two candidates, both real; one diagnostic separates them.
+
+  The server does apply it — Core_Character.cs:179,
+  %player.setFaceName(MRPG_faceWithEye(%face, %eye)), and MRPG_CharLook (:834)
+  re-asserts after applyBodyColors. But:
+
+  Candidate A — stock overwrite through a path that isn't hooked.
+  GameConnection::applyBodyColors ends with setFaceName(%client.faceName)
+  (allGameScripts.cs:4213). The package hooks applyBodyColors and re-applies
+  after parent::, so that path is covered. It does not hook applyBodyParts, and
+  %client.faceName is never updated to the MRPG face. Any path that repaints via
+  applyBodyParts alone, or reads %client.faceName later, restores the client's
+  stock Blockland avatar face.
+
+  Candidate B — the client can't resolve the name. setFaceName networks a name;
+  the receiving client resolves it against its own
+  base/data/shapes/player/face.ifl, built from that client's installed 
+  Add-Ons/Face_* folders. The faces live in Add-Ons/Face_MonsterRPG/ (44 files)
+  and eight Add-Ons/Face_MRPGEye_* packs — all server-side add-ons.
+  Client_MonsterRPG/GUIs/Faces/ ships exactly one entry. Blockland does not
+  transfer add-ons, so any client without those packs renders the stock smiley.
+  This matches your phrasing ("doesn't apply from Client_MonsterRPG") precisely.
+
+  Fix (do both — they're independent):
+  - Set %client.faceName / %client.decalName to the MRPG values inside
+  MRPG_applyLookToPlayer, so every stock repaint path applies the right face by
+  construction instead of needing a re-assert race. Add applyBodyParts to the
+  MRPG_CharLook package as a belt-and-braces.
+  - Move/copy Face_MonsterRPG and the Face_MRPGEye_* packs into
+  Client_MonsterRPG distribution, or make Client_MonsterRPG a hard client-side
+  requirement with a join-time check that warns when
+  isFile("Add-Ons/Face_MonsterRPG/mrpgFace1Hap.png") is false. Keep
+  $CS::FaceDirs (CharacterScreen.cs:849) and $MRPG::Look::FaceDirs in step —
+  they already carry a comment saying so.
+
+  Diagnostic: the debug print at Core_Character.cs:735-740 already dumps
+  base/worn face name. Run it, then on a second machine check
+  isFile("Add-Ons/Face_MonsterRPG/<worn>.png"). If the server name is right and
+  the file is missing client-side, it's B.
+
+  ---
+  Bug 5 — Hair doesn't fit heads
+
+  Confidence: high on the primary cause.
+
+  Hair is a HatMod hat. Server_HatMod/server.cs:203-220 registers every hat with
+  a hardcoded scale = "0.1 0.1 0.1" and a fixed offset, both authored against a
+  1.0-scale blockhead head.
+
+  MonsterRPG scales players per race/age: Core_Character.cs:129-130
+  %player.setScale(%scale), clamped 0.5–2.5 by MRPG_safeScale (:305). A mounted
+  ShapeBaseImageData does not inherit the mount owner's object scale — so on a
+  0.94 or 1.15 character the hair sits at 1.0 size, floating above or sunk into
+  the head. That is "doesn't always fit" — it fits exactly the characters whose
+  scale is 1.0.
+
+  Secondary: Player::mountHat (:172-178) hides $hat[] / $accent[] nodes to clear
+  the underlying head geometry. If those globals are sparse or unpopulated on
+  this server at the moment hair mounts, the loop for(%i=0; $hat[%i] !$= ""; 
+  %i++) terminates early and leftover hat nodes poke through the hair.
+
+  Fix:
+  - Add an MRPG-side MRPG_fitHair(%player) that, after mountHat, sets the
+  mounted image's scale and offset proportional to %player.getScale(). Since
+  ShapeBaseImageData fields are per-datablock (shared by every wearer), do this
+  by generating per-scale-band hat datablock variants — the same trick already
+  used for skin shapes (Datablocks_SkinShapes.cs) — rather than mutating the
+  shared datablock, which would resize every player's hair at once.
+  - Bound it: quantize scale into ~5 bands so the datablock count stays sane.
+  - Harden the node-hide loop: iterate $num["Hat"] / $num["Accent"] like stock
+  hideAllNodes (allGameScripts.cs:4363) instead of the null-terminated walk.
+  - Re-run the fit inside charHairCheck (Core_Character.cs:321), which already
+  re-mounts when the head slot is stolen.
+
+  Verify: spawn characters at scale 0.5, 0.75, 1.0, 1.5, 2.5 with three
+  different hair packs.
+
+  ---
+  Bug 3 — Some clients don't get the level-1 starter weapon
+
+  Confidence: high — it's a spawn-ordering race, which is exactly why it hits "a
+  client out of a few."
+
+  Core_OLDpackage.cs:2726-2751, in order:
+
+  %client.player.setDatablock("Swordman");     // :2726  — rebuilds the shape,
+  clears images
+  MonsterRPGx_LoadProfileInv(%client);         // :2731/2735
+  if(!%client.profile.GaveStarterWeapon) {
+  MonsterRPG_GiveStarterWeapon(%client); }   // :2743
+
+  MonsterRPG_GiveStarterWeapon (Core_Loot.cs:1209) picks its slot by scanning
+  %player.tool[%i] == 0 (:1226-1234). If MonsterRPGx_LoadProfileInv hasn't
+  finished populating tool[] — or if it defers any of its work to a schedule —
+  the starter takes a slot the restore then overwrites, or lands on an
+  already-occupied one. And setDatablock on the line above triggers
+  Armor::onNewDataBlock, which is another repaint/remount in flight.
+
+  Second issue: the failure is silent-ish and not retried. GaveStarterWeapon is
+  only set on success, but the whole block sits behind the once-per-session
+  hasSpawnedOnce guard (:2753), so a client that loses the race gets nothing
+  that session.
+
+  Fix:
+  - Make the grant run after the inventory restore has settled: give
+  MonsterRPGx_LoadProfileInv a completion callback (or schedule the grant off
+  it) rather than calling both back to back.
+  - Re-verify the slot immediately before writing: re-scan tool[] at grant time
+  and abort→retry if it changed.
+  - Move the grant out of the hasSpawnedOnce block so it retries on the next
+  spawn when it fails, keeping GaveStarterWeapon as the once-ever guard.
+  - The STARTERDBG: echoes are already in place throughout
+  MonsterRPG_GiveStarterWeapon — turn them into a gated $MRPG::Debug::Starter
+  channel and leave them in; they're how you'll confirm the fix on a live server
+  rather than by reproduction.
+
+  ---
+  Bug 4 — Bots don't take hits (collision rework)
+
+  Confidence: mechanism mapped; needs a live capsule dump to pick between two 
+  culprits. This is the big one.
+
+  The current stack, in Weapon_Dueling_Swords/swordBot.cs:1128-1427:
+
+  ┌───────────────┬─────────────────────────────────────────────────────────┐
+  │     Layer     │                      What it does                       │
+  ├───────────────┼─────────────────────────────────────────────────────────┤
+  │ Rays 0–2      │ Motion path of slot 0/1/2 this tick, full mask          │
+  ├───────────────┼─────────────────────────────────────────────────────────┤
+  │ Rays 3–5      │ Live blade + the two swept-quad diagonals, bodies only  │
+  ├───────────────┼─────────────────────────────────────────────────────────┤
+  │ Radius search │ MRPG_boneSweep used as a detector for close quarters    │
+  │               │ (:1257-1320)                                            │
+  ├───────────────┼─────────────────────────────────────────────────────────┤
+  │ Capsule       │ MRPG_boneSweep used as a rejector on every ray hit      │
+  │ filter        │ (:1342-1363)                                            │
+  ├───────────────┼─────────────────────────────────────────────────────────┤
+  │ swordAttack   │ Parry / crit / momentum / dismember / damage (:1764)    │
+  └───────────────┴─────────────────────────────────────────────────────────┘
+
+  The prime suspect is the capsule filter at :1353. Every raycast hit —
+  including a clean one — is re-tested with MRPG_boneSweep(%hit, %from, %to, 
+  MRPG_bladeHalfOf(%class)), and %sw $= "" → continue, hit discarded. The
+  tolerance is tiny: $Sword::BladeHalf is 0.020–0.060 (:292-298), against arm
+  capsules of radius ~0.09. MRPG_boneSweep (Core_Dismember.cs:638) returns ""
+  whenever no capsule is within radius + tol of the blade segment.
+
+  Two ways that goes bot-specific:
+  - GetPlayerBoneCapsules (BHOctree.dll) returns capsules that don't track a 
+  bot. It reads the live TSShapeInstance node transforms. If object scale isn't
+  folded in, every scaled bot's capsules sit at the wrong size/place — and
+  MonsterRPG scales bots via the same MRPG_applyLookToPlayer path as players.
+  Non-blockhead bot shapes (Gobbo.dts and friends, explicitly acknowledged at
+  Core_Character.cs:87) have none of the expected nodes and return X for every
+  record → %bestPart $= "" → "" → every hit rejected, and note MRPG_boneSweep
+  only returns "FAIL" (the fall-through-as-hit case) when the header is bad, not
+  when all records are X.
+  - Sword rigs eat the hit. The rig is a mounted AIPlayer (swordBot.cs:599/618).
+  The close-quarters search skips them (:1271 if (%cand.isSwordBot || 
+  isObject(%cand.getObjectMount())) continue;) but the six-ray path has no such 
+  check — a raycast on PlayerObjectType can return the defender's own rig, which
+  then consumes hitCount/totalHits and burns the one-hit-per-swing budget on
+  the weapon instead of the body.
+
+  Plan:
+
+  Stage 0 — instrument before changing anything. $SwordDebug already draws the
+  rays (:1230) and Support/Support_Hitbox.cs already renders live capsules as
+  boxes. Turn both on against a bot and dump, per swing: which ray hit, what
+  MRPG_boneSweep returned, and whether the capsule header was ok. This is the
+  one place guessing is expensive — the answer decides Stage 1's shape.
+
+  Stage 1 — fail open, correctly. In MRPG_boneSweep / MRPG_boneZone, distinguish
+  "capsules read, blade genuinely missed" from "capsules unusable for this
+  shape." Return "FAIL" when every record is X, not just on a bad header —
+  currently an all-X shape reads as a clean miss and silently makes that entity
+  invulnerable to swords. This alone may be the whole bug.
+
+  Stage 2 — exclude weapons from the target set. Add the isSwordBot /
+  mounted-rig skip to the ray loop at :1325, matching what the radius search
+  already does at :1271.
+
+  Stage 3 — one detector, not three. Collapse the three overlapping layers into
+  a single pass: for each candidate in a radius search around the blade segment,
+  run the capsule sweep as the sole authority, with raycast used only for
+  line-of-sight occlusion (which is what the code already does at :1298-1302 for
+  the close-quarters path). That removes the "box says hit, bones say no, hit
+  is dropped and the target is now immune for the rest of the swing" failure the
+  comment at :1327-1338 is itself worried about.
+
+  Stage 4 — verify scale. Confirm whether GetPlayerBoneCapsules applies object
+  scale; if not, scale the capsule radii and endpoints script-side against
+  %victim.getScale() before the sweep.
+
+  Stage 5 — regression net. Player-vs-player, player-vs-bot, bot-vs-bot,
+  bot-vs-player, at melee range and reach, on scaled and unscaled targets,
+  blockhead and non-blockhead bot shapes, with dismemberment and parry both
+  firing. Everything downstream reads the sweep result — Core_Dismember,
+  Core_DeathPhysics, Core_Tumble, Core_SwingMomentum — so the limb attribution
+  must stay correct, not just the damage.
+
+  ---
+  Two things I'd want from you before starting
+
+  1. Bug 2's "better representation" — is the intent a scaled-and-centered
+  version of the current layout, or a redesigned backdrop (art, vignette, world
+  visible behind a blur)? Changes the scope from ~an hour to a design pass.
+  2. Bug 4's DLL — do you have the BHOctree source, or is it a black box? If
+  it's a black box, Stage 4 has to be worked around in script rather than fixed
+  at the source.
+
+  I can start on #2 and #1 immediately; neither depends on those answers.
+
+✻ Cooked for 9m 42s
+
+● Background command "Watch the restarted 125 tps server" completed (exit code
+0)
+  Ran 1 shell command (ctrl+o to expand)
+
+● A background watcher from an earlier session just finished — unrelated to the
+  plan, but it caught something:
+
+  freezewatch on the 125 tps server (30 min run): one freeze.
+
+  FREEZE DETECTED  2026-08-07T16:01:31
+    pid=16844 role=SERVER  stalled 11s
+    sim clock frozen at listA=2912 listB=2920
+    CPU during stall: 107% of one core (SPINNING)
+
+  Three things it rules out:
+  - Not lock contention — the lock table was empty at freeze time.
+  - Not stack overflow / runaway recursion — 13,520 bytes of stack used with ~1
+  MB of headroom below esp, and only 6 frames.
+  - Not a deadlock — it spun at full core, then recovered on its own 27s later.
+
+  So it's a busy loop on the engine main thread, six frames deep, with
+  Blockland.exe+0x343CF appearing twice consecutively (frames [02] and [03]) — a
+  two-level cycle rather than deep recursion. Server-side, so it is not the 1
+  ms RPGExpLoop reschedule chain I flagged in bug #1; that one is client-only.
+
+  This doesn't change anything in the plan above. Flagging it because an
+  11-second sim-clock stall on the tick server is the kind of thing that would
+  corrupt any timing measurement you take while diagnosing bug #4 — worth
+  resolving, or at least knowing about, before trusting swing-timing numbers
+  from that server.
+
+  My two open questions from the plan still stand, and I haven't started on
+  anything yet:
+  1. Bug #2 — scaled-and-centered version of the current layout, or a redesigned
+  backdrop?
+  2. Bug #4 — do you have BHOctree source, or is the DLL a black box?
+
+✻ Brewed for 21s
