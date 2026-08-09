@@ -65,8 +65,7 @@ there.
 **Setup can't find Blockland.** Click "Choose folder..." and browse to the
 folder with `Blockland.exe` in it. Usually that's Documents\Blockland.
 
-**Your antivirus complains.** Read the next section. Uninstalling takes it all
-back off.
+**Your antivirus complains.** See "About antivirus warnings" below.
 
 **Double clicking Setup does nothing.** It's already open somewhere. Check your
 taskbar.
@@ -90,6 +89,37 @@ Blockland folder. It says what happened.
   goes out. Tick it if you want sound and voice chat.
 
 Setup shows all this on its first screen, before it asks you anything.
+
+## About antivirus warnings
+
+Some scanners flag this. On the last check, 3 out of 65 on VirusTotal did, with
+generic labels like "Downloader" rather than a match on anything specific.
+
+Here is the honest reason. The installer writes program files to your disk, and
+the mod works by loading DLLs into a running game. Those two things together
+are also the shape of a dropper, and a few engines score on shape. There is no
+network code anywhere in the installer at all: it imports no networking library
+and cannot make a connection. You can check that yourself, the source is here.
+
+The real reason it gets flagged and, say, a Steam installer doesn't, is that
+this isn't signed with a code signing certificate. Those cost money per year.
+Until it is signed, expect the occasional warning.
+
+What you can do:
+
+- **Check it yourself.** Upload the file to [VirusTotal](https://www.virustotal.com)
+  and look at *which* engines complain. Two or three generic hits out of sixty-five
+  is normal for unsigned software. Twenty would not be.
+- **Read the code.** All of it is in this repository, including the installer.
+- **Build it yourself** from source, if you'd rather trust your own compiler.
+- **Report the false positive** if you use one of the affected scanners. They
+  all take submissions:
+  [Bkav](https://www.bkav.com/report-false-positive),
+  [Rising](https://www.rising.com.cn/), Elastic via
+  [their GitHub](https://github.com/elastic/protections-artifacts/issues).
+
+If a scanner ever flags this with a *specific* trojan name rather than a
+generic one, please open an issue. That would be worth looking at properly.
 
 ## For developers
 

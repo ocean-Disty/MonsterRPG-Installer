@@ -459,54 +459,29 @@ static int RunCleanup(int argc, wchar_t **argv)
         }
     }
 
-    /* Now delete this copy of ourselves.
+    /* This copy is now the only thing left, and it is sitting in the
+     * temporary folder rather than in anybody's game folder. That is where it
+     * stops.
      *
-     * MoveFileEx with MOVEFILE_DELAY_UNTIL_REBOOT looks like the obvious way
-     * and is the wrong one: it records the rename in a machine-wide registry
-     * key, so it needs administrator rights, which this installer deliberately
-     * never asks for. It fails silently without them - and the helper then
-     * sits in the temporary folder for good. Ten of them turned up during
-     * testing, one per uninstall.
+     * It would be nice to remove it too, and there is a well known way to do
+     * it: start a hidden cmd that waits with ping and then deletes the file.
+     * That was here, and it is now gone on purpose. "Ping, then delete
+     * yourself" is one of the most heavily signatured behaviours in malware,
+     * because droppers have used it for twenty years. Antivirus engines flag
+     * it on sight, and they are not wrong to - the pattern really is what it
+     * looks like. Shipping it means arguing with every scanner forever over a
+     * 170 KB file nobody will ever see.
      *
-     * A short-lived cmd does the job with no special rights at all: it waits
-     * for this process to be gone, deletes the file, and exits. Nothing is
-     * left behind either way. */
-    if (GetModuleFileNameW(NULL, self, MAX_PATH * 2) != 0) {
-        wchar_t comspec[MAX_PATH];
-        wchar_t cmd[MAX_PATH * 4];
-        STARTUPINFOW si;
-        PROCESS_INFORMATION pi;
-        BOOL handedOver = FALSE;
-
-        if (GetEnvironmentVariableW(L"COMSPEC", comspec, MAX_PATH) == 0)
-            wcscpy(comspec, L"cmd.exe");
-
-        /* ping is the wait: it is always present, unlike timeout, which is not
-         * on older Windows and refuses to run without a console anyway. */
-        _snwprintf(cmd, sizeof(cmd) / sizeof(cmd[0]),
-                   L"\"%s\" /d /s /c \"ping -n 3 127.0.0.1 >nul & del /f /q \"%s\"\"",
-                   comspec, self);
-        cmd[(sizeof(cmd) / sizeof(cmd[0])) - 1] = L'\0';
-
-        ZeroMemory(&si, sizeof(si));
-        si.cb = sizeof(si);
-        si.dwFlags = STARTF_USESHOWWINDOW;
-        si.wShowWindow = SW_HIDE;
-        ZeroMemory(&pi, sizeof(pi));
-
-        if (CreateProcessW(NULL, cmd, NULL, NULL, FALSE,
-                           CREATE_NO_WINDOW | DETACHED_PROCESS,
-                           NULL, NULL, &si, &pi)) {
-            CloseHandle(pi.hThread);
-            CloseHandle(pi.hProcess);
-            handedOver = TRUE;
-        }
-
-        /* Only as a last resort, and only useful if this somehow runs with
-         * administrator rights. Better than leaving the file for certain. */
-        if (!handedOver)
-            MoveFileExW(self, NULL, MOVEFILE_DELAY_UNTIL_REBOOT);
-    }
+     * So: ask Windows to remove it at the next restart, which is the ordinary
+     * documented way installers tidy up after themselves, and accept that
+     * without administrator rights that request is refused. What is left then
+     * is one small file in the folder Windows exists to throw away, which
+     * Storage Sense and Disk Cleanup both clear on their own.
+     *
+     * The Blockland folder, which is the part anyone can see, is empty of us
+     * either way. */
+    if (GetModuleFileNameW(NULL, self, MAX_PATH * 2) != 0)
+        MoveFileExW(self, NULL, MOVEFILE_DELAY_UNTIL_REBOOT);
 
     return 0;
 }

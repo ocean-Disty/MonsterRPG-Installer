@@ -112,18 +112,43 @@ checkbox, since there's no useful game without them. To add a new optional part
 later: one line in `KindOf` in `Setup.c`, and a checkbox in `Setup.rc`. Anything
 not named there is installed always, which is the safe default.
 
-**The uninstaller removes itself.** A running program can't delete its own file,
-so it copies itself to temp. That copy waits for the first to close, deletes it
-and the install log, then hands its own deletion to a short lived `cmd`.
+**The uninstaller clears itself out of the game folder.** A running program
+can't delete its own file, so it copies itself to temp. That copy waits for the
+first to close, then deletes it and the install log. The Blockland folder ends
+up with nothing of ours left in it.
 
-`MoveFileEx` with `MOVEFILE_DELAY_UNTIL_REBOOT` looks like the obvious way to do
-that last part, and it's wrong. It writes to a machine wide registry key, so it
-needs admin, which this installer never asks for. Without admin the call fails
-quietly and the helper sits in temp for good. Ten of them piled up during
-testing before it got caught.
+The copy in temp then asks Windows to delete it at the next restart and exits.
+That request needs admin, which this never asks for, so on a normal account one
+170 KB file stays in `%TEMP%` until Storage Sense or Disk Cleanup clears it.
+
+That's deliberate. The way to delete it right away is a hidden `cmd` that waits
+with `ping` and then deletes the file, and that was here until the antivirus
+results came back. "Ping, then delete yourself" is one of the most heavily
+signatured behaviours there is, because droppers have used it for twenty years,
+and engines flag it on sight. Not worth arguing with every scanner forever over
+a file sitting in the folder Windows exists to throw away.
 
 Self removal only runs when everything else worked. If anything is still there,
 the uninstaller and the log stay put so it can be run again.
+
+## Why an antivirus might complain
+
+This is an unsigned installer that writes .exe files and starts a game with
+DLLs injected into it. Structurally that is what a dropper does, and a handful
+of the more trigger-happy engines say so. Three of sixty-five flagged the first
+release, all of them generic machine-learning or heuristic hits rather than a
+match on anything specific.
+
+Things that help, in order of how much they help:
+
+1. **A code signing certificate.** This is the actual fix, and nothing else
+   comes close. [SignPath](https://signpath.io/) and Microsoft's Azure Trusted
+   Signing both do free or cheap certificates for open source projects.
+2. **Reporting the false positives.** Every vendor takes submissions and most
+   turn them around in days. Links are in the top level README.
+3. **Not writing malware-shaped code**, which is why the `ping`-and-self-delete
+   is gone.
+4. **Time and downloads.** SmartScreen reputation builds on its own.
 
 ## Building
 
