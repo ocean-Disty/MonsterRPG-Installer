@@ -21,7 +21,7 @@ Why it happens, honestly: MonsterRPG works by loading its DLL files into
 Blockland while the game is running. The two small launcher programs that do
 that use the same Windows calls every DLL injector uses, and a few scanners
 score on that pattern alone. They are not wrong about what the code does. It is
-how the mod works, and it is how Blockland mods have always worked.
+how the mod works, and it is how Blockland dll mods have always worked.
 
 What it is **not** is a downloader, whatever the label says. There is no
 networking code in the installer at all. It imports no network library and
