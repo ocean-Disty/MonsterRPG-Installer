@@ -1,18 +1,23 @@
 # ===========================================================================
-#  make-release.ps1 - build one zip for people to download and run.
+#  make-release.ps1 - build the two things people download.
 #
-#  Produces  release\MonsterRPG-<version>.zip  containing everything somebody
-#  needs: the installer, the three folders it installs, and the source all of
-#  it was built from. They unzip it and double-click "MonsterRPG Setup.exe".
+#  Both go on the same GitHub Release, because they are for two different
+#  people:
 #
-#  Attach that zip to a GitHub Release. The "Just want to play?" link at the
-#  top of README.md points at the latest release, so it is the one file most
-#  people ever touch.
+#    release\MonsterRPG-Setup-<version>.exe
+#        One file. Download it, double-click it, done. The mod folders are
+#        zipped up inside the .exe and unpacked to a temporary folder while it
+#        runs. Nothing has to sit beside it.
 #
-#  Source is INCLUDED in the download on purpose. It costs almost nothing next
-#  to the artwork, and it means the answer to "what does this program do?" is
-#  sitting in the same folder as the program, not on a website somebody has to
-#  be told about.
+#    release\MonsterRPG-<version>.zip
+#        The same installer, the same folders loose beside it, and all the
+#        source everything was built from. For anyone who would rather read
+#        the code than take a stranger's .exe on faith, and for building it
+#        yourself.
+#
+#  Source is in the zip on purpose. It costs almost nothing next to the
+#  artwork, and it means the answer to "what does this program do?" sits in
+#  the same folder as the program.
 #
 #  Usage:
 #      powershell -ExecutionPolicy Bypass -File Installer\tools\make-release.ps1
@@ -140,16 +145,51 @@ if ($leaked) {
     throw "private or stale files got into the release - REFUSING to zip"
 }
 
-# --- zip --------------------------------------------------------------------
+# --- the source download ----------------------------------------------------
 Write-Host ""
-Write-Host "Compressing ..."
+Write-Host "Compressing the source download ..."
 Compress-Archive -Path (Join-Path $stage '*') -DestinationPath $zip -CompressionLevel Optimal
-Remove-Item -Recurse -Force $stage
 
-$size = (Get-Item $zip).Length / 1MB
+# --- the one-file installer -------------------------------------------------
+# Everything except the Installer folder, since that is source rather than
+# something to copy into a Blockland folder. Setup unpacks this at run time and
+# then behaves exactly as if the folders had been sitting beside it.
+Write-Host "Packing the payload for the standalone installer ..."
+
+$payloadStage = Join-Path $out 'payload'
+$payloadZip   = Join-Path $root 'Installer\build\payload.zip'
+if (Test-Path $payloadStage) { Remove-Item -Recurse -Force $payloadStage }
+if (Test-Path $payloadZip)   { Remove-Item -Force $payloadZip }
+New-Item -ItemType Directory -Force -Path $payloadStage | Out-Null
+
+foreach ($f in @('BLTickRate', 'Client_MonsterRPG', 'MonsterRPGAudio')) {
+    Copy-Item -Recurse -LiteralPath (Join-Path $stage $f) -Destination $payloadStage
+}
+Copy-Item -LiteralPath (Join-Path $stage 'README.txt') -Destination $payloadStage
+
+Compress-Archive -Path (Join-Path $payloadStage '*') -DestinationPath $payloadZip -CompressionLevel Optimal
+Remove-Item -Recurse -Force $payloadStage
+
+Write-Host "Building the standalone installer ..."
+& cmd /c "`"$root\Installer\build.bat`" standalone < NUL 2>&1" | Out-String -Width 200 | Write-Host
+
+$builtExe = Join-Path $root 'Installer\build\MonsterRPG Setup (standalone).exe'
+if (-not (Test-Path $builtExe)) { throw "the standalone build did not produce an .exe" }
+
+$standalone = Join-Path $out "MonsterRPG-Setup-$Version.exe"
+if (Test-Path $standalone) { Remove-Item -Force $standalone }
+Copy-Item -LiteralPath $builtExe -Destination $standalone
+
+Remove-Item -Recurse -Force $stage
+Remove-Item -Force $payloadZip
+
+# --- done -------------------------------------------------------------------
+$zipMb = (Get-Item $zip).Length / 1MB
+$exeMb = (Get-Item $standalone).Length / 1MB
+
 Write-Host ""
-Write-Host ("  {0}   ({1:N1} MB)" -f $zip, $size) -ForegroundColor Green
+Write-Host ("  {0}   ({1:N1} MB)   one file, just run it" -f (Split-Path $standalone -Leaf), $exeMb) -ForegroundColor Green
+Write-Host ("  {0}   ({1:N1} MB)   installer plus all the source" -f (Split-Path $zip -Leaf), $zipMb) -ForegroundColor Green
 Write-Host ""
-Write-Host "Attach that file to a GitHub Release tagged v$Version."
-Write-Host "The download link at the top of README.md points at the latest release."
+Write-Host "Both are in $out. Attach both to a GitHub Release tagged v$Version."
 Write-Host ""

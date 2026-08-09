@@ -13,8 +13,23 @@ order:
    `Blockland MonsterRPG.exe`, next to `Blockland.exe`. It finds the installed
    mods and starts the game through whichever one loads first, which pulls in
    the rest.
-2. `Uninstaller.exe`. Setup writes it out as `Uninstall MonsterRPG.exe`.
+2. `Uninstaller.exe`. Setup writes it out as
+   `Blockland MonsterRPG Uninstaller.exe`.
 3. `MonsterRPG Setup.exe`, with the first two embedded.
+
+Both output names are picked so a folder sorted by name groups them:
+
+```
+Blockland MonsterRPG Uninstaller.exe
+Blockland MonsterRPG.exe
+Blockland.exe
+```
+
+A space sorts before a dot, so ` Uninstaller.exe` lands above `.exe`. The names
+live in `Common.h` as `LAUNCHER_NAME` and `UNINSTALLER_NAME`, and the shortcut
+names next to them follow the same trick. Change one of those and everything
+else follows, including what the uninstaller looks for when the install log has
+gone missing.
 
 ## Where files go
 

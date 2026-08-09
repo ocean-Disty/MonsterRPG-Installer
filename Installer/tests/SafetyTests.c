@@ -70,7 +70,7 @@ int wmain(void)
     ExpectAllowed(L"Add-Ons\\Client_MonsterRPG", "one inside Add-Ons");
     ExpectAllowed(L"Add-Ons\\Client_MonsterRPG.zip", "the zip beside it");
     ExpectAllowed(L"Blockland MonsterRPG.exe", "the launcher, spaces and all");
-    ExpectAllowed(L"Uninstall MonsterRPG.exe", "the uninstaller");
+    ExpectAllowed(L"Blockland MonsterRPG Uninstaller.exe", "the uninstaller");
     ExpectAllowed(L"Add-Ons\\Folder With Spaces\\file.txt", "spaces deeper down");
 
     wprintf(L"\nBlockland's own files, which must be REFUSED\n");

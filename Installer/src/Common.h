@@ -16,12 +16,26 @@
 
 /* Files Setup puts into the Blockland folder.
  *
- * The launcher is named to sit next to Blockland.exe in a sorted folder
- * listing, so the thing you double-click is right beside the thing you used to
- * double-click. */
+ * Both names start with "Blockland MonsterRPG" so that a folder sorted by name
+ * puts the three together, in this order:
+ *
+ *     Blockland MonsterRPG Uninstaller.exe
+ *     Blockland MonsterRPG.exe
+ *     Blockland.exe
+ *
+ * That is not a coincidence of spelling, it is the reason for the names. A
+ * space sorts before a dot, so " Uninstaller.exe" lands above ".exe", and
+ * whoever installed this finds both of our programs sitting right on top of
+ * the one they already knew about. */
 #define LAUNCHER_NAME       L"Blockland MonsterRPG.exe"
-#define UNINSTALLER_NAME    L"Uninstall MonsterRPG.exe"
+#define UNINSTALLER_NAME    L"Blockland MonsterRPG Uninstaller.exe"
 #define MANIFEST_NAME       L"MonsterRPG install log.txt"
+
+/* Shortcut names, chosen the same way and for the same reason: a space sorts
+ * before a dot, so the uninstaller shortcut lands directly above the one that
+ * starts the game. */
+#define SHORTCUT_NAME       L"MonsterRPG.lnk"
+#define SHORTCUT_UNINST     L"MonsterRPG Uninstaller.lnk"
 
 /* The game itself. */
 #define GAME_EXE            L"Blockland.exe"

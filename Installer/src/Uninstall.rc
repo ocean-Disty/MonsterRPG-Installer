@@ -1,4 +1,5 @@
-/* Resources for Uninstall MonsterRPG.exe */
+/* Resources for the uninstaller, which Setup writes out as
+   "Blockland MonsterRPG Uninstaller.exe" (UNINSTALLER_NAME in Common.h). */
 
 #include <windows.h>
 #include "Resource.h"
@@ -24,7 +25,7 @@ BEGIN
             VALUE "FileDescription",  "Remove MonsterRPG"
             VALUE "FileVersion",      VER_STRING
             VALUE "InternalName",     "MonsterRPGUninstall"
-            VALUE "OriginalFilename", "Uninstall MonsterRPG.exe"
+            VALUE "OriginalFilename", "Blockland MonsterRPG Uninstaller.exe"
             VALUE "ProductName",      PRODUCT_NAME
             VALUE "ProductVersion",   VER_STRING
             VALUE "LegalCopyright",   "MonsterRPG"

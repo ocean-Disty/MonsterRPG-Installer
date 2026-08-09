@@ -30,6 +30,7 @@
 
 #include "Common.h"
 #include "Zip.h"
+#include "Unzip.h"
 #include "Resource.h"
 
 #include <commctrl.h>
@@ -90,6 +91,11 @@ typedef struct {
 
     wchar_t  srcDir[MAX_PATH * 2];
     wchar_t  gameDir[MAX_PATH * 2];
+
+    /* Set only by the standalone build, when the folders had to be unpacked
+     * out of this .exe into the temporary folder. Emptied again on the way
+     * out, after the unpacked copy has been deleted. */
+    wchar_t  unpackedTo[MAX_PATH * 2];
 
     /* What the search came up with when Setup opened, and whether it was a
      * real find. Kept so the wording at the top can go on being true after the
@@ -171,9 +177,37 @@ static void AppendLog(HWND edit, const wchar_t *line)
  *  What is in the download
  * ------------------------------------------------------------------------ */
 
-/* Every folder beside Setup.exe, except the one holding Setup's own source.
- * Deliberately not a fixed list: dropping another mod folder into the
- * download and adding a line to README.txt is enough to have it installed. */
+/* Every folder beside Setup.exe that is part of the download.
+ *
+ * Deliberately not a fixed list of what to include: dropping another mod
+ * folder in and adding a line to README.txt is enough to have it installed.
+ * What is listed instead is what to leave out, which is the repository's own
+ * furniture. Those folders are not in the released zip, but they are there
+ * when Setup is run from a checkout, and without this a developer testing a
+ * build gets "release" and "Installer" copied into their Blockland folder. */
+static BOOL IsRepositoryFolder(const wchar_t *name)
+{
+    static const wchar_t *const notPayload[] = {
+        L"Installer",     /* Setup's own source */
+        L"release",       /* where make-release.ps1 puts the zip */
+        L".git",
+        L".github",
+        L".vs",
+        NULL
+    };
+    int i;
+
+    /* Anything starting with a dot is tooling, not game content. */
+    if (name[0] == L'.')
+        return TRUE;
+
+    for (i = 0; notPayload[i] != NULL; ++i)
+        if (EqualsNoCase(name, notPayload[i]))
+            return TRUE;
+
+    return FALSE;
+}
+
 static int FindPayload(const wchar_t *srcDir, Payload *out, int max)
 {
     wchar_t pattern[MAX_PATH * 2];
@@ -194,7 +228,7 @@ static int FindPayload(const wchar_t *srcDir, Payload *out, int max)
             continue;
         if (wcscmp(fd.cFileName, L".") == 0 || wcscmp(fd.cFileName, L"..") == 0)
             continue;
-        if (EqualsNoCase(fd.cFileName, L"Installer"))
+        if (IsRepositoryFolder(fd.cFileName))
             continue;
         if (n >= max)
             break;
@@ -208,6 +242,89 @@ static int FindPayload(const wchar_t *srcDir, Payload *out, int max)
 
     FindClose(h);
     return n;
+}
+
+/* ---------------------------------------------------------------------------
+ *  Getting hold of the folders to install
+ *
+ *  There are two ways Setup is shipped, and this is the only place that cares
+ *  which one is running:
+ *
+ *    * Beside the folders. What you get from the source download. The folders
+ *      sit next to Setup.exe and are read straight off the disk.
+ *
+ *    * On its own. One .exe with the whole download zipped up inside it, for
+ *      people who just want to click one thing. The zip is unpacked into the
+ *      temporary folder and then everything downstream behaves identically,
+ *      because all it sees is a folder full of folders.
+ *
+ *  Folders on the disk win when both are available, so that a developer
+ *  testing a build gets their working copy and not a stale copy baked into
+ *  the .exe months ago.
+ * ------------------------------------------------------------------------ */
+
+static BOOL UnpackProgress(void *user, const wchar_t *nameInZip)
+{
+    (void)user; (void)nameInZip;
+    return TRUE;
+}
+
+static BOOL PreparePayload(Ctx *c)
+{
+    HRSRC found;
+    HGLOBAL loaded;
+    const void *zip;
+    DWORD zipSize;
+    wchar_t tempRoot[MAX_PATH];
+    wchar_t folder[64];
+    HCURSOR busy;
+
+    c->payloadCount = FindPayload(c->srcDir, c->payload, MAX_PAYLOAD);
+    if (c->payloadCount > 0)
+        return TRUE;
+
+    found = FindResourceW(c->inst, MAKEINTRESOURCEW(IDR_PAYLOAD_ZIP), RT_RCDATA);
+    if (found == NULL)
+        return FALSE;               /* ordinary build, and nothing beside it */
+
+    zipSize = SizeofResource(c->inst, found);
+    loaded  = LoadResource(c->inst, found);
+    if (loaded == NULL || zipSize == 0)
+        return FALSE;
+
+    zip = LockResource(loaded);
+    if (zip == NULL)
+        return FALSE;
+
+    if (GetTempPathW(MAX_PATH, tempRoot) == 0)
+        return FALSE;
+
+    _snwprintf(folder, sizeof(folder) / sizeof(folder[0]),
+               L"MonsterRPG-setup-%lu", GetCurrentProcessId());
+    folder[(sizeof(folder) / sizeof(folder[0])) - 1] = L'\0';
+    PathJoin(c->unpackedTo, sizeof(c->unpackedTo) / sizeof(c->unpackedTo[0]),
+             tempRoot, folder);
+
+    /* This runs before there is a window to put a progress bar in, and takes
+     * a few seconds. The busy cursor is the only thing there is to say so. */
+    busy = LoadCursorW(NULL, IDC_WAIT);
+    if (busy != NULL)
+        SetCursor(busy);
+
+    if (!UnzipToFolder(zip, zipSize, c->unpackedTo, UnpackProgress, c)) {
+        DeleteTree(c->unpackedTo);
+        c->unpackedTo[0] = L'\0';
+        SetCursor(LoadCursorW(NULL, IDC_ARROW));
+        return FALSE;
+    }
+
+    SetCursor(LoadCursorW(NULL, IDC_ARROW));
+
+    wcsncpy(c->srcDir, c->unpackedTo, (sizeof(c->srcDir) / sizeof(c->srcDir[0])) - 1);
+    c->srcDir[(sizeof(c->srcDir) / sizeof(c->srcDir[0])) - 1] = L'\0';
+
+    c->payloadCount = FindPayload(c->srcDir, c->payload, MAX_PAYLOAD);
+    return c->payloadCount > 0;
 }
 
 /* ---------------------------------------------------------------------------
@@ -622,7 +739,7 @@ static BOOL WriteInstallLog(Ctx *c)
         L"Game folder:\r\n"
         L"    %s\r\n"
         L"\r\n"
-        L"Everything listed below was put there by Setup. \"Uninstall MonsterRPG.exe\"\r\n"
+        L"Everything listed below was put there by Setup. \"%s\"\r\n"
         L"in the same folder reads this list and removes exactly these things and\r\n"
         L"nothing else. If you delete this file, the uninstaller has nothing to go\r\n"
         L"on and you would have to remove the folders by hand.\r\n"
@@ -630,7 +747,8 @@ static BOOL WriteInstallLog(Ctx *c)
         L"FOLDER and FILE lines are inside the game folder above.\r\n"
         L"SHORTCUT lines are the full path to a shortcut.\r\n"
         L"\r\n",
-        now.wYear, now.wMonth, now.wDay, now.wHour, now.wMinute, c->gameDir);
+        now.wYear, now.wMonth, now.wDay, now.wHour, now.wMinute, c->gameDir,
+        UNINSTALLER_NAME);
     line[(sizeof(line) / sizeof(line[0])) - 1] = L'\0';
     AppendToBuffer(&buf, &cch, &used, line);
 
@@ -1104,24 +1222,37 @@ static DWORD WINAPI InstallThread(LPVOID param)
 
     if (ok && !Cancelled(c)) {
         wchar_t target[MAX_PATH * 2];
+        wchar_t remover[MAX_PATH * 2];
         wchar_t lnk[MAX_PATH * 2];
         wchar_t dir[MAX_PATH * 2];
 
         PathJoin(target, sizeof(target) / sizeof(target[0]), c->gameDir, LAUNCHER_NAME);
+        PathJoin(remover, sizeof(remover) / sizeof(remover[0]), c->gameDir, UNINSTALLER_NAME);
 
         if (GetStartMenuProgramsDir(dir, sizeof(dir) / sizeof(dir[0]))) {
-            PathJoin(lnk, sizeof(lnk) / sizeof(lnk[0]), dir, L"MonsterRPG.lnk");
+            PathJoin(lnk, sizeof(lnk) / sizeof(lnk[0]), dir, SHORTCUT_NAME);
             if (CreateShortcut(lnk, target, c->gameDir, L"Play Blockland with MonsterRPG")) {
                 RecordEntry(c, L"SHORTCUT", lnk);
                 PostText(c->dlg, WM_APP_LOG, L"Added MonsterRPG to the Start menu");
             }
         }
 
+        /* The uninstaller gets a shortcut wherever the game does, so the way to
+         * undo this is sitting next to the way to run it rather than being
+         * something you have to know to go and look for. The name puts it
+         * directly above the other one in a list sorted by name. */
         if (c->desktopShortcut && GetDesktopDir(dir, sizeof(dir) / sizeof(dir[0]))) {
-            PathJoin(lnk, sizeof(lnk) / sizeof(lnk[0]), dir, L"MonsterRPG.lnk");
+            PathJoin(lnk, sizeof(lnk) / sizeof(lnk[0]), dir, SHORTCUT_NAME);
             if (CreateShortcut(lnk, target, c->gameDir, L"Play Blockland with MonsterRPG")) {
                 RecordEntry(c, L"SHORTCUT", lnk);
                 PostText(c->dlg, WM_APP_LOG, L"Put a MonsterRPG shortcut on your Desktop");
+            }
+
+            PathJoin(lnk, sizeof(lnk) / sizeof(lnk[0]), dir, SHORTCUT_UNINST);
+            if (CreateShortcut(lnk, remover, c->gameDir, L"Remove MonsterRPG from Blockland")) {
+                RecordEntry(c, L"SHORTCUT", lnk);
+                PostText(c->dlg, WM_APP_LOG,
+                         L"Put a MonsterRPG Uninstaller shortcut beside it");
             }
         }
     }
@@ -1355,7 +1486,16 @@ static void StartInstall(HWND dlg, Ctx *c)
     ShowPage(dlg, c, PAGE_WORK);
 
     SetDlgItemTextW(dlg, IDC_HEAD_TITLE, L"Installing MonsterRPG");
-    SetDlgItemTextW(dlg, IDC_HEAD_SUB, L"This takes a few seconds. Please leave it alone.");
+
+    /* The folder goes on screen, not just into the scrolling log. Where the
+     * files are going is the one thing worth being able to see at a glance
+     * while it happens, and afterwards. */
+    {
+        wchar_t into[MAX_PATH * 2 + 32];
+        _snwprintf(into, sizeof(into) / sizeof(into[0]), L"Into %s", c->gameDir);
+        into[(sizeof(into) / sizeof(into[0])) - 1] = L'\0';
+        SetDlgItemTextW(dlg, IDC_HEAD_SUB, into);
+    }
     SetDlgItemTextW(dlg, IDCANCEL, L"Stop");
     EnableWindow(GetDlgItem(dlg, IDC_INSTALL), FALSE);
 
@@ -1379,19 +1519,19 @@ static void StartInstall(HWND dlg, Ctx *c)
 
 static void FinishUp(HWND dlg, Ctx *c, BOOL success)
 {
+    wchar_t line[MAX_PATH * 2];
+
     c->installing = FALSE;
     c->finished = TRUE;
 
     SendDlgItemMessageW(dlg, IDC_PROGRESS, PBM_SETPOS, success ? 100 : 0, 0);
 
     if (success) {
-        wchar_t line[MAX_PATH * 2];
-
         SetDlgItemTextW(dlg, IDC_HEAD_TITLE, L"MonsterRPG is installed");
 
-        _snwprintf(line, sizeof(line) / sizeof(line[0]),
-                   L"Double-click \"%s\" in your Blockland folder to play.",
-                   LAUNCHER_NAME);
+        _snwprintf(line, sizeof(line) / sizeof(line[0]), L"Installed into %s",
+                   c->gameDir);
+        line[(sizeof(line) / sizeof(line[0])) - 1] = L'\0';
         SetDlgItemTextW(dlg, IDC_HEAD_SUB, line);
         SetDlgItemTextW(dlg, IDC_STATUS, L"Finished.");
 
@@ -1414,9 +1554,10 @@ static void FinishUp(HWND dlg, Ctx *c, BOOL success)
         SetDlgItemTextW(dlg, IDC_STATUS, L"Stopped.");
 
         AppendLog(GetDlgItem(dlg, IDC_LOG), L"");
-        AppendLog(GetDlgItem(dlg, IDC_LOG),
-            L"Anything that was already copied can be removed with "
-            L"\"Uninstall MonsterRPG.exe\" in your Blockland folder.");
+        _snwprintf(line, sizeof(line) / sizeof(line[0]),
+                   L"Anything that was already copied can be removed with \"%s\" "
+                   L"in your Blockland folder.", UNINSTALLER_NAME);
+        AppendLog(GetDlgItem(dlg, IDC_LOG), line);
     }
 
     SetDlgItemTextW(dlg, IDC_INSTALL, L"Close");
@@ -1549,9 +1690,9 @@ static INT_PTR CALLBACK SetupProc(HWND dlg, UINT msg, WPARAM wp, LPARAM lp)
             L"unusual to software watching for it. That is why.\r\n"
             L"\r\n"
             L"YOU CAN UNDO ALL OF IT\r\n"
-            L"Setup puts \"Uninstall MonsterRPG\" in your Blockland folder and lists "
-            L"MonsterRPG in Windows' Apps and features. Either takes back everything "
-            L"Setup added.");
+            L"Setup puts \"Blockland MonsterRPG Uninstaller\" in your Blockland folder, "
+            L"right next to the one that starts the game, and lists MonsterRPG in "
+            L"Windows' Apps and features. Either takes back everything Setup added.");
 
         /* Deliberately blunt, and deliberately first: the box below is unticked
          * and the sentence that says why is the first thing next to it. */
@@ -1684,8 +1825,8 @@ static INT_PTR CALLBACK SetupProc(HWND dlg, UINT msg, WPARAM wp, LPARAM lp)
                 if (MessageBoxW(dlg,
                         L"Stop copying?\n\n"
                         L"What has already been copied stays where it is. You can "
-                        L"remove it afterwards with \"Uninstall MonsterRPG.exe\", or "
-                        L"run Setup again to finish the job.",
+                        L"remove it afterwards with the MonsterRPG uninstaller in "
+                        L"your Blockland folder, or run Setup again to finish the job.",
                         SETUP_TITLE, MB_YESNO | MB_ICONQUESTION) == IDYES) {
                     InterlockedExchange(&c->cancelled, 1);
                     SetDlgItemTextW(dlg, IDC_STATUS, L"Stopping...");
@@ -1776,8 +1917,10 @@ int WINAPI wWinMain(HINSTANCE inst, HINSTANCE prev, PWSTR cmdLine, int show)
         return 1;
     }
 
+    /* Before ReadPlan, because on the standalone build README.txt comes out of
+     * the same zip as the folders and does not exist until this has run. */
+    PreparePayload(&g_ctx);
     ReadPlan(g_ctx.srcDir, &g_ctx.plan);
-    g_ctx.payloadCount = FindPayload(g_ctx.srcDir, g_ctx.payload, MAX_PAYLOAD);
 
     /* A window that never appears is the worst possible failure: from the
      * outside Setup simply does nothing. Say so instead. */
@@ -1801,6 +1944,14 @@ int WINAPI wWinMain(HINSTANCE inst, HINSTANCE prev, PWSTR cmdLine, int show)
         WaitForSingleObject(g_ctx.worker, 10000);
         CloseHandle(g_ctx.worker);
         g_ctx.worker = NULL;
+    }
+
+    /* The standalone build unpacked itself into the temporary folder to do
+     * any of this. Waiting until here means the copy is still there for the
+     * whole run, including a second attempt after a failed one. */
+    if (g_ctx.unpackedTo[0] != L'\0') {
+        DeleteTree(g_ctx.unpackedTo);
+        g_ctx.unpackedTo[0] = L'\0';
     }
 
     CoUninitialize();

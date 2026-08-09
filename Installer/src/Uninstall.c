@@ -1,5 +1,9 @@
 /* ===========================================================================
- *  Uninstall MonsterRPG.exe
+ *  Blockland MonsterRPG Uninstaller.exe
+ *
+ *  Built as Uninstaller.exe and renamed by Setup when it writes it out; the
+ *  name it ends up with is UNINSTALLER_NAME in Common.h, chosen so it sorts
+ *  directly above Blockland MonsterRPG.exe in the game folder.
  *
  *  Sits in the Blockland folder next to the install log Setup wrote, shows
  *  exactly what is about to be removed, and removes it.
@@ -155,12 +159,16 @@ static void AddStandardGuess(Ctx *c)
     }
 
     if (GetStartMenuProgramsDir(dir, sizeof(dir) / sizeof(dir[0]))) {
-        PathJoin(lnk, sizeof(lnk) / sizeof(lnk[0]), dir, L"MonsterRPG.lnk");
+        PathJoin(lnk, sizeof(lnk) / sizeof(lnk[0]), dir, SHORTCUT_NAME);
         if (FileExists(lnk))
             AddEntry(c, L"SHORTCUT", lnk);
     }
     if (GetDesktopDir(dir, sizeof(dir) / sizeof(dir[0]))) {
-        PathJoin(lnk, sizeof(lnk) / sizeof(lnk[0]), dir, L"MonsterRPG.lnk");
+        PathJoin(lnk, sizeof(lnk) / sizeof(lnk[0]), dir, SHORTCUT_NAME);
+        if (FileExists(lnk))
+            AddEntry(c, L"SHORTCUT", lnk);
+
+        PathJoin(lnk, sizeof(lnk) / sizeof(lnk[0]), dir, SHORTCUT_UNINST);
         if (FileExists(lnk))
             AddEntry(c, L"SHORTCUT", lnk);
     }

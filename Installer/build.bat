@@ -78,7 +78,7 @@ if errorlevel 1 goto failed
 
 REM ---------------------------------------------------------------------------
 REM  2. The uninstaller. Setup writes it into the game folder under its real
-REM     name, "Uninstall MonsterRPG.exe"; here it has no space in the name so
+REM     name, "Blockland MonsterRPG Uninstaller.exe"; here it is plain so
 REM     the resource line in Setup.rc stays simple.
 REM ---------------------------------------------------------------------------
 echo Building the uninstaller ...
@@ -92,12 +92,22 @@ REM ---------------------------------------------------------------------------
 REM  3. Setup, with those two inside it. It is written straight into the folder
 REM     above, because that is where it has to live: beside README.txt and the
 REM     folders it copies.
+REM
+REM     "build.bat standalone" builds a second, much bigger Setup that also has
+REM     the mod folders zipped up inside it, so the download is one file. That
+REM     one needs build\payload.zip to exist already; make-release.ps1 packs it
+REM     and then calls this. The plain build is the one that goes in the
+REM     repository, which is why the .exe there is half a megabyte and not
+REM     forty.
 REM ---------------------------------------------------------------------------
+if /I "%~1"=="standalone" goto standalone
+
 echo Building MonsterRPG Setup.exe ...
 windres -I "%SRC%" "%SRC%\Setup.rc" -O coff -o "%OUT%\Setup.res"
 if errorlevel 1 goto failed
 gcc %CFLAGS% -o "%DIST%\MonsterRPG Setup.exe" ^
-    "%SRC%\Setup.c" "%SRC%\Common.c" "%SRC%\Zip.c" "%OUT%\Setup.res" %LIBS% -lz
+    "%SRC%\Setup.c" "%SRC%\Common.c" "%SRC%\Zip.c" "%SRC%\Unzip.c" ^
+    "%OUT%\Setup.res" %LIBS% -lz
 if errorlevel 1 goto failed
 
 echo.
@@ -105,6 +115,36 @@ echo  BUILD SUCCESSFUL
 echo    %DIST%\MonsterRPG Setup.exe
 echo.
 echo  That one file plus the folders beside it is the whole download.
+echo.
+endlocal
+exit /b 0
+
+:standalone
+if not exist "%OUT%\payload.zip" (
+    echo.
+    echo  ERROR: %OUT%\payload.zip is missing.
+    echo.
+    echo  The standalone build packs the mod folders inside the .exe, so that
+    echo  zip has to be made first. Run Installer\tools\make-release.ps1, which
+    echo  packs it and then calls this.
+    echo.
+    pause
+    exit /b 1
+)
+
+echo Building the standalone MonsterRPG Setup.exe ...
+windres -I "%SRC%" -DWITH_PAYLOAD "%SRC%\Setup.rc" -O coff -o "%OUT%\SetupFull.res"
+if errorlevel 1 goto failed
+gcc %CFLAGS% -o "%OUT%\MonsterRPG Setup (standalone).exe" ^
+    "%SRC%\Setup.c" "%SRC%\Common.c" "%SRC%\Zip.c" "%SRC%\Unzip.c" ^
+    "%OUT%\SetupFull.res" %LIBS% -lz
+if errorlevel 1 goto failed
+
+echo.
+echo  BUILD SUCCESSFUL
+echo    %OUT%\MonsterRPG Setup (standalone).exe
+echo.
+echo  That single file is the whole download. Nothing needs to sit beside it.
 echo.
 endlocal
 exit /b 0

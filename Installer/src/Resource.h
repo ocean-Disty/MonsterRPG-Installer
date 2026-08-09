@@ -21,6 +21,12 @@
 #define IDR_LAUNCHER_EXE        201
 #define IDR_UNINSTALLER_EXE     202
 
+/* The standalone build also carries the mod folders themselves, zipped, so
+ * that the download is one file. The ordinary build has no such resource and
+ * reads the folders sitting beside it instead. Setup asks for this at startup
+ * and simply carries on without it when it is not there. */
+#define IDR_PAYLOAD_ZIP         203
+
 /* Setup's window */
 #define IDD_SETUP              1000
 

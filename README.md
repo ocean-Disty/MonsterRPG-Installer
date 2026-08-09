@@ -8,30 +8,54 @@ run it.
 
 ## Install it
 
-**[Download the zip here.](../../releases/latest)** It's under "Assets" at the
-bottom of the release.
+**[Go to the latest release.](../../releases/latest)** Under "Assets" there are
+two files. Most people want the first one.
 
-1. Open your Downloads folder.
-2. Right click the zip you just downloaded. Pick **Extract All**, then click
-   **Extract**.
-3. A folder opens up. Double click **MonsterRPG Setup.exe** inside it.
-4. Windows might show a blue box saying "Windows protected your PC". Click
+| File | What it's for |
+|---|---|
+| `MonsterRPG-Setup-1.0.0.exe` | Just want to play. One file, nothing to unzip. |
+| `MonsterRPG-1.0.0.zip` | The same installer plus all the source code. |
+
+### The one file way
+
+1. Click `MonsterRPG-Setup-1.0.0.exe` to download it. It's about 40 MB.
+2. Open your Downloads folder and double click it.
+3. Windows might show a blue box saying "Windows protected your PC". Click
    **More info**, then **Run anyway**. It says that because the file isn't
    signed, which costs money.
-5. Read the first screen, then click **Continue**.
-6. Setup usually finds Blockland by itself. If the text under the box is green,
+4. Read the first screen, then click **Continue**.
+5. Setup usually finds Blockland by itself. If the text under the box is green,
    click **Install**. If it's red, click **Choose folder...** and pick the
    folder that has `Blockland.exe` and `Add-Ons` sitting in it.
-7. When it's done, click **Close**.
+6. When it's done, click **Close**.
+
+Everything is inside that one .exe. It unpacks itself to a temporary folder
+while it runs and clears that up afterwards.
+
+### The zip way
+
+Same thing, but the mod folders and all the source sit loose next to the
+installer so you can read them first.
+
+1. Download `MonsterRPG-1.0.0.zip`.
+2. Right click it in your Downloads folder. Pick **Extract All**, then
+   **Extract**.
+3. A folder opens up. Double click **MonsterRPG Setup.exe** inside it.
+4. Carry on from step 3 above.
 
 To play, open your Blockland folder and double click
 **Blockland MonsterRPG.exe**. There's a MonsterRPG shortcut in your Start menu
-as well.
+as well, and one on your Desktop if you left that box ticked.
 
 ## Uninstall it
 
-Open your Blockland folder and double click **Uninstall MonsterRPG.exe**. Click
-**Remove**, then **Yes**.
+Open your Blockland folder and double click
+**Blockland MonsterRPG Uninstaller.exe**. It sits directly above
+Blockland MonsterRPG.exe in the list, so it's easy to find. Click **Remove**,
+then **Yes**.
+
+If you took the Desktop shortcut, there's a **MonsterRPG Uninstaller** shortcut
+sitting next to the MonsterRPG one.
 
 It's also listed in Settings > Apps > Installed apps if you'd rather do it from
 there.
@@ -78,6 +102,13 @@ README.txt           tells Setup where each folder goes
 ```
 
 Built DLLs are in each `bin/`, so you don't have to compile anything to use it.
+
+`build.bat` makes the ordinary Setup, which reads the folders sitting beside
+it. That's the one in this repo, and it's half a megabyte. The 40 MB standalone
+is the same program with the mod folders zipped inside it as a resource, built
+by `Installer\tools\make-release.ps1`, and it's only ever attached to a release.
+Keeping it out of the repo is why cloning this isn't a 40 MB download per
+rebuild.
 
 Building needs MinGW-w64 with 32-bit support, since Blockland is 32-bit:
 

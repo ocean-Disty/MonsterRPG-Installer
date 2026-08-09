@@ -16,6 +16,18 @@ IDI_APP ICON "MonsterRPG.ico"
 IDR_LAUNCHER_EXE    RCDATA "../build/MonsterRPG.exe"
 IDR_UNINSTALLER_EXE RCDATA "../build/Uninstaller.exe"
 
+/* The standalone build carries the mod folders as well, so the whole thing is
+ * one file to download and one thing to double-click. Switched on by passing
+ * -DWITH_PAYLOAD to windres, which build.bat does for "build.bat standalone".
+ *
+ * Without it, Setup finds no such resource and reads the folders sitting
+ * beside it instead. That is the build that goes in the source download and
+ * in the repository, and it is why the .exe there is half a megabyte rather
+ * than forty. */
+#ifdef WITH_PAYLOAD
+IDR_PAYLOAD_ZIP     RCDATA "../build/payload.zip"
+#endif
+
 VS_VERSION_INFO VERSIONINFO
 FILEVERSION    VER_MAJOR, VER_MINOR, VER_PATCH, 0
 PRODUCTVERSION VER_MAJOR, VER_MINOR, VER_PATCH, 0
@@ -59,7 +71,11 @@ BEGIN
                     SS_ICON | SS_CENTERIMAGE | WS_CHILD | WS_VISIBLE, 16, 13, 24, 24
     LTEXT           "Install MonsterRPG", IDC_HEAD_TITLE, 50, 13, 296, 14,
                     SS_LEFT | SS_NOPREFIX
-    LTEXT           "", IDC_HEAD_SUB, 50, 30, 300, 10, SS_LEFT | SS_NOPREFIX
+    /* SS_PATHELLIPSIS so that when this line is showing the folder being
+       installed into, a long path loses its middle rather than its end. The
+       end is the part that says which folder it actually is. */
+    LTEXT           "", IDC_HEAD_SUB, 50, 30, 300, 10,
+                    SS_LEFT | SS_NOPREFIX | SS_PATHELLIPSIS
 
     /* --- page 1: what installing this actually does ---------------------- */
     LTEXT           "What this will do to your game",
