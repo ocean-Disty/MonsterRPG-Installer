@@ -1,0 +1,106 @@
+/* Resources for MonsterRPG Setup.exe
+ *
+ * The two RCDATA lines carry the finished MonsterRPG.exe and uninstaller
+ * inside Setup, so what people download is Setup plus the folders it copies,
+ * and not a pile of loose programs they have to keep track of. build.bat
+ * builds those two first for exactly this reason.
+ */
+
+#include <windows.h>
+#include "Resource.h"
+
+1 RT_MANIFEST "app.manifest"
+
+IDI_APP ICON "MonsterRPG.ico"
+
+IDR_LAUNCHER_EXE    RCDATA "../build/MonsterRPG.exe"
+IDR_UNINSTALLER_EXE RCDATA "../build/Uninstaller.exe"
+
+VS_VERSION_INFO VERSIONINFO
+FILEVERSION    VER_MAJOR, VER_MINOR, VER_PATCH, 0
+PRODUCTVERSION VER_MAJOR, VER_MINOR, VER_PATCH, 0
+FILEFLAGSMASK  VS_FFI_FILEFLAGSMASK
+FILEFLAGS      0
+FILEOS         VOS_NT_WINDOWS32
+FILETYPE       VFT_APP
+FILESUBTYPE    VFT2_UNKNOWN
+BEGIN
+    BLOCK "StringFileInfo"
+    BEGIN
+        BLOCK "040904B0"
+        BEGIN
+            VALUE "CompanyName",      COMPANY_NAME
+            VALUE "FileDescription",  "MonsterRPG Setup"
+            VALUE "FileVersion",      VER_STRING
+            VALUE "InternalName",     "MonsterRPGSetup"
+            VALUE "OriginalFilename", "MonsterRPG Setup.exe"
+            VALUE "ProductName",      PRODUCT_NAME
+            VALUE "ProductVersion",   VER_STRING
+            VALUE "LegalCopyright",   "MonsterRPG"
+        END
+    END
+    BLOCK "VarFileInfo"
+    BEGIN
+        VALUE "Translation", 0x409, 1200
+    END
+END
+
+
+IDD_SETUP DIALOGEX 0, 0, 360, 314
+STYLE DS_SETFONT | DS_MODALFRAME | DS_CENTER | WS_POPUP | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX
+EXSTYLE WS_EX_APPWINDOW
+CAPTION "MonsterRPG Setup"
+FONT 9, "Segoe UI", 400, 0, 1
+BEGIN
+    /* "#101" is IDI_APP written the way a static control wants it. It has to
+       name a real icon: an SS_ICON static whose text does not resolve fails to
+       be created, and one control failing takes the whole window with it. */
+    CONTROL         "#101", IDC_HEAD_ICON, "Static",
+                    SS_ICON | SS_CENTERIMAGE | WS_CHILD | WS_VISIBLE, 16, 13, 24, 24
+    LTEXT           "Install MonsterRPG", IDC_HEAD_TITLE, 50, 13, 296, 14,
+                    SS_LEFT | SS_NOPREFIX
+    LTEXT           "", IDC_HEAD_SUB, 50, 30, 300, 10, SS_LEFT | SS_NOPREFIX
+
+    /* --- page 1: what installing this actually does ---------------------- */
+    LTEXT           "What this will do to your game",
+                    IDC_INTRO_TITLE, 16, 58, 330, 10, SS_LEFT | SS_NOPREFIX
+    LTEXT           "", IDC_INTRO_TEXT, 26, 74, 320, 198, SS_LEFT | SS_NOPREFIX
+
+    /* --- page 2: choosing what to do ------------------------------------ */
+    LTEXT           "1.   Where is Blockland on this computer?",
+                    IDC_STEP1, 16, 58, 330, 10, SS_LEFT | SS_NOPREFIX
+    EDITTEXT        IDC_FOLDER, 16, 72, 246, 14,
+                    ES_AUTOHSCROLL | WS_BORDER | WS_TABSTOP
+    PUSHBUTTON      "Choose folder...", IDC_BROWSE, 268, 71, 78, 16
+    /* Three lines high. This line carries the "look for Blockland.exe and
+       Add-Ons together" wording, which is the whole answer for anyone with a
+       custom install, so it must never be clipped. */
+    LTEXT           "", IDC_FOLDER_STATE, 16, 91, 330, 26, SS_LEFT | SS_NOPREFIX
+
+    LTEXT           "2.   What Setup will put there",
+                    IDC_STEP2, 16, 122, 330, 10, SS_LEFT | SS_NOPREFIX
+    LTEXT           "", IDC_PARTS_ALWAYS, 26, 135, 320, 22, SS_LEFT | SS_NOPREFIX
+
+    /* Left UNTICKED by the code, and it must stay that way. Ticking this box
+       is how somebody agrees to a program on their computer listening on a
+       network port, and that is not a thing to agree to on their behalf. */
+    AUTOCHECKBOX    "MonsterRPG Audio  -  sound, music and 3D voice chat",
+                    IDC_CHK_AUDIO, 22, 162, 324, 12, WS_TABSTOP
+    LTEXT           "", IDC_AUDIO_NOTE, 34, 176, 312, 78, SS_LEFT | SS_NOPREFIX
+
+    AUTOCHECKBOX    "Put a MonsterRPG shortcut on my Desktop",
+                    IDC_CHK_DESKTOP, 22, 260, 324, 12, WS_TABSTOP
+
+    /* --- page 3: copying, and the report afterwards ---------------------- */
+    CONTROL         "", IDC_PROGRESS, "msctls_progress32",
+                    WS_CHILD, 16, 64, 330, 12
+    LTEXT           "", IDC_STATUS, 16, 82, 330, 10, SS_LEFT | SS_NOPREFIX
+    EDITTEXT        IDC_LOG, 16, 98, 330, 160,
+                    ES_MULTILINE | ES_READONLY | ES_AUTOVSCROLL |
+                    WS_VSCROLL | WS_BORDER | WS_TABSTOP
+    AUTOCHECKBOX    "Start MonsterRPG now", IDC_PLAY, 16, 264, 200, 12, WS_TABSTOP
+
+    /* --- the two buttons ------------------------------------------------ */
+    DEFPUSHBUTTON   "Continue", IDC_INSTALL, 196, 288, 74, 18
+    PUSHBUTTON      "Cancel", IDCANCEL, 276, 288, 70, 18
+END

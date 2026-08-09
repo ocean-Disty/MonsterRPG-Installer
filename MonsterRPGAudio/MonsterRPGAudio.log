@@ -1,0 +1,57 @@
+[      0 ms] MonsterRPGAudio  -  ray-traced game audio, played natively
+[      0 ms] launched 2026-08-08 18:07:17  pid 7428
+[      0 ms] ----------------------------------------------------------
+[      0 ms] dll:  0.3.0-phase3, 32-bit, loaded from C:\Users\alexa\OneDrive\Documents\MonsterRPGBlockland\Blockland\MonsterRPGAudio\bin
+[      0 ms] dll:  host process: "C:\Users\alexa\OneDrive\Documents\MonsterRPGBlockland\Blockland\Blockland.exe" -client
+[      0 ms] cfg: 5 settings loaded from MonsterRPGAudio.cfg
+[      0 ms] crypto: self test passed (RFC 8439 ChaCha20, RFC 4231 HMAC-SHA256)
+[    140 ms] gpu:   AMD Radeon RX 7900 XTX
+[    140 ms] gpu:     vendor 1002  device 744C  vulkan 1.4  type 2
+[    140 ms] gpu:     ray_query 1  accel_struct 1  deferred_ops 1  ->  gateA 1, gateB pass
+[    140 ms] gpu: verdict ELIGIBLE - ray query present and the generation rule passes
+[    140 ms] gpu:   chosen adapter: AMD Radeon RX 7900 XTX
+[    140 ms] gpu:   THIS DOES NOT AFFECT WHAT YOU HEAR. Acoustics are traced on the
+[    140 ms] gpu:   server's GPU regardless; this only decides whether that work can
+[    140 ms] gpu:   later be offloaded to this machine (not built yet).
+[   1953 ms] engine: game window up after 1813 ms
+[   2203 ms] engine: rendezvous armed (WH_GETMESSAGE on tid 14512)
+[  17250 ms] engine:   still waiting for the game to pump messages (15 s - it is loading add-ons)
+[  28765 ms] bind: on the game thread (tid 14512), binding to the console
+[  28781 ms] bind: registered _Version / _State / _GpuWhy / _Log / _Connect / _Release / _Stat / _MapProfile / _Listener / _AudioStat
+[  28781 ms] bind: VERIFIED - the engine evaluated MRPGAudio_Version() and answered "0.3.0-phase3"
+[  28797 ms] audio: device up - 96000 Hz, 8 ch, float32, shared mode, MMCSS
+[  28797 ms] state: READY - loaded, bound, and waiting to be invited by a server.
+[  28797 ms] state:   Nothing is hooked and no socket is open. Joining a non-MonsterRPG
+[  28797 ms] state:   server will not change that.
+[  49172 ms] net: invited by 192.168.1.110:28010 (blid 48741, manifest 1, can_play 0), session key accepted, ChaCha20 + HMAC-SHA256 armed
+[  49172 ms] net: thread up (tid 17136), talking to 192.168.1.110:28010
+[  49172 ms] script: connected to 192.168.1.110:28010 as blid 48741
+[  49172 ms] net: server answered and its MAC verified - secure link is up (its manifest version 1)
+[  49172 ms] script: profiles: 8038 datablocks, 467 audio, 0 with no filename, 467 mapped
+[  79203 ms] net: 30 s summary - 0 sound records (0 new), 31 hellos, 0 bad, 0 forged, 0 foreign
+[ 109234 ms] net: 30 s summary - 0 sound records (0 new), 61 hellos, 0 bad, 0 forged, 0 foreign
+[ 139265 ms] net: 30 s summary - 0 sound records (0 new), 91 hellos, 0 bad, 0 forged, 0 foreign
+[ 169343 ms] net: 30 s summary - 0 sound records (0 new), 121 hellos, 0 bad, 0 forged, 0 foreign
+[ 199406 ms] net: 30 s summary - 0 sound records (0 new), 151 hellos, 0 bad, 0 forged, 0 foreign
+[ 229484 ms] net: 30 s summary - 0 sound records (0 new), 181 hellos, 0 bad, 0 forged, 0 foreign
+[ 259547 ms] net: 30 s summary - 0 sound records (0 new), 211 hellos, 0 bad, 0 forged, 0 foreign
+[ 289609 ms] net: 30 s summary - 0 sound records (0 new), 241 hellos, 0 bad, 0 forged, 0 foreign
+[ 319672 ms] net: 30 s summary - 0 sound records (0 new), 271 hellos, 0 bad, 0 forged, 0 foreign
+[ 349750 ms] net: 30 s summary - 0 sound records (0 new), 301 hellos, 0 bad, 0 forged, 0 foreign
+[ 379781 ms] net: 30 s summary - 0 sound records (0 new), 331 hellos, 0 bad, 0 forged, 0 foreign
+[ 409812 ms] net: 30 s summary - 0 sound records (0 new), 361 hellos, 0 bad, 0 forged, 0 foreign
+[ 439843 ms] net: 30 s summary - 0 sound records (0 new), 391 hellos, 0 bad, 0 forged, 0 foreign
+[ 469875 ms] net: 30 s summary - 0 sound records (0 new), 421 hellos, 0 bad, 0 forged, 0 foreign
+[ 499906 ms] net: 30 s summary - 0 sound records (0 new), 451 hellos, 0 bad, 0 forged, 0 foreign
+[ 529937 ms] net: 30 s summary - 0 sound records (0 new), 481 hellos, 0 bad, 0 forged, 0 foreign
+[ 559968 ms] net: 30 s summary - 0 sound records (0 new), 511 hellos, 0 bad, 0 forged, 0 foreign
+[ 590000 ms] net: 30 s summary - 0 sound records (0 new), 541 hellos, 0 bad, 0 forged, 0 foreign
+[ 620031 ms] net: 30 s summary - 0 sound records (0 new), 571 hellos, 0 bad, 0 forged, 0 foreign
+[ 650062 ms] net: 30 s summary - 0 sound records (0 new), 601 hellos, 0 bad, 0 forged, 0 foreign
+[ 680093 ms] net: 30 s summary - 0 sound records (0 new), 631 hellos, 0 bad, 0 forged, 0 foreign
+[ 710125 ms] net: 30 s summary - 0 sound records (0 new), 661 hellos, 0 bad, 0 forged, 0 foreign
+[ 740140 ms] net: 30 s summary - 0 sound records (0 new), 691 hellos, 0 bad, 0 forged, 0 foreign
+[ 770172 ms] net: 30 s summary - 0 sound records (0 new), 721 hellos, 0 bad, 0 forged, 0 foreign
+[ 800203 ms] net: 30 s summary - 0 sound records (0 new), 751 hellos, 0 bad, 0 forged, 0 foreign
+[ 803515 ms] ----------------------------------------------------------
+[ 803515 ms] closing: process exiting

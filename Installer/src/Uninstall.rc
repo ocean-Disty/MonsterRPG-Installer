@@ -1,0 +1,67 @@
+/* Resources for Uninstall MonsterRPG.exe */
+
+#include <windows.h>
+#include "Resource.h"
+
+1 RT_MANIFEST "app.manifest"
+
+IDI_APP ICON "MonsterRPG.ico"
+
+VS_VERSION_INFO VERSIONINFO
+FILEVERSION    VER_MAJOR, VER_MINOR, VER_PATCH, 0
+PRODUCTVERSION VER_MAJOR, VER_MINOR, VER_PATCH, 0
+FILEFLAGSMASK  VS_FFI_FILEFLAGSMASK
+FILEFLAGS      0
+FILEOS         VOS_NT_WINDOWS32
+FILETYPE       VFT_APP
+FILESUBTYPE    VFT2_UNKNOWN
+BEGIN
+    BLOCK "StringFileInfo"
+    BEGIN
+        BLOCK "040904B0"
+        BEGIN
+            VALUE "CompanyName",      COMPANY_NAME
+            VALUE "FileDescription",  "Remove MonsterRPG"
+            VALUE "FileVersion",      VER_STRING
+            VALUE "InternalName",     "MonsterRPGUninstall"
+            VALUE "OriginalFilename", "Uninstall MonsterRPG.exe"
+            VALUE "ProductName",      PRODUCT_NAME
+            VALUE "ProductVersion",   VER_STRING
+            VALUE "LegalCopyright",   "MonsterRPG"
+        END
+    END
+    BLOCK "VarFileInfo"
+    BEGIN
+        VALUE "Translation", 0x409, 1200
+    END
+END
+
+
+IDD_UNINSTALL DIALOGEX 0, 0, 360, 296
+STYLE DS_SETFONT | DS_MODALFRAME | DS_CENTER | WS_POPUP | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX
+EXSTYLE WS_EX_APPWINDOW
+CAPTION "Remove MonsterRPG"
+FONT 9, "Segoe UI", 400, 0, 1
+BEGIN
+    /* See the same line in Setup.rc: "#101" is IDI_APP, and an SS_ICON static
+       that names nothing real fails to be created, taking the window with it. */
+    CONTROL         "#101", IDC_U_HEAD_ICON, "Static",
+                    SS_ICON | SS_CENTERIMAGE | WS_CHILD | WS_VISIBLE, 16, 13, 24, 24
+    LTEXT           "Remove MonsterRPG", IDC_U_HEAD_TITLE, 50, 13, 296, 14,
+                    SS_LEFT | SS_NOPREFIX
+    LTEXT           "", IDC_U_HEAD_SUB, 50, 30, 300, 10,
+                    SS_LEFT | SS_NOPREFIX | SS_PATHELLIPSIS
+
+    LTEXT           "", IDC_U_SUMMARY, 16, 58, 330, 26, SS_LEFT | SS_NOPREFIX
+
+    EDITTEXT        IDC_U_LIST, 16, 90, 330, 140,
+                    ES_MULTILINE | ES_READONLY | ES_AUTOVSCROLL |
+                    WS_VSCROLL | WS_HSCROLL | WS_BORDER | WS_TABSTOP
+
+    LTEXT           "", IDC_U_STATUS, 16, 236, 330, 10, SS_LEFT | SS_NOPREFIX
+    CONTROL         "", IDC_U_PROGRESS, "msctls_progress32",
+                    WS_CHILD, 16, 250, 330, 12
+
+    DEFPUSHBUTTON   "Remove", IDC_U_REMOVE, 196, 270, 74, 18
+    PUSHBUTTON      "Cancel", IDCANCEL, 276, 270, 70, 18
+END
