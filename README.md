@@ -6,6 +6,36 @@ An RPG mod for Blockland. Faster tick rate, plus optional ray traced audio with
 All the code is in this repo, installer included, so you can read it before you
 run it.
 
+## Before you download: yes, some scanners flag this
+
+**[Here is the VirusTotal scan.](https://www.virustotal.com/gui/file/ed5b4fb3769f93e29b2615d18865b15b8351a4953324faa59ffe48453140bae9?nocache=1)**
+3 engines out of 65 call it malicious. Bkav, Elastic and Rising. The other 62,
+Microsoft and BitDefender and Kaspersky and CrowdStrike among them, pass it.
+
+That scan is of the green **Code** button download of this repo, so it is the
+source and the built files together. Push anything and the hash changes, so
+treat it as a snapshot rather than a permanent link. Scan your own copy if you
+want to be sure of what you have.
+
+Why it happens, honestly: MonsterRPG works by loading its DLL files into
+Blockland while the game is running. The two small launcher programs that do
+that use the same Windows calls every DLL injector uses, and a few scanners
+score on that pattern alone. They are not wrong about what the code does. It is
+how the mod works, and it is how Blockland mods have always worked.
+
+What it is **not** is a downloader, whatever the label says. There is no
+networking code in the installer at all. It imports no network library and
+cannot open a connection, which you can check yourself from the source in this
+repo.
+
+The reason a Steam installer does not get flagged and this does is a code
+signing certificate, which costs money every year. Until this is signed, expect
+the occasional warning.
+
+There is more on this, including how to check for yourself and how to report a
+false positive, in [About antivirus warnings](#about-antivirus-warnings) further
+down.
+
 ## Install it
 
 **[Go to the latest release.](../../releases/latest)** Under "Assets" there are
@@ -92,34 +122,57 @@ Setup shows all this on its first screen, before it asks you anything.
 
 ## About antivirus warnings
 
-Some scanners flag this. On the last check, 3 out of 65 on VirusTotal did, with
-generic labels like "Downloader" rather than a match on anything specific.
+The short version is at the top. This is the detail.
 
-Here is the honest reason. The installer writes program files to your disk, and
-the mod works by loading DLLs into a running game. Those two things together
-are also the shape of a dropper, and a few engines score on shape. There is no
-network code anywhere in the installer at all: it imports no networking library
-and cannot make a connection. You can check that yourself, the source is here.
+### Which files, exactly
 
-The real reason it gets flagged and, say, a Steam installer doesn't, is that
-this isn't signed with a code signing certificate. Those cost money per year.
-Until it is signed, expect the occasional warning.
+It is not the installer. The two files that trip the scanners are the mod
+launchers:
 
-What you can do:
+```
+BLTickRate/bin/BLTickRateLaunch.exe
+MonsterRPGAudio/bin/MonsterRPGAudioLaunch.exe
+```
 
-- **Check it yourself.** Upload the file to [VirusTotal](https://www.virustotal.com)
-  and look at *which* engines complain. Two or three generic hits out of sixty-five
-  is normal for unsigned software. Twenty would not be.
-- **Read the code.** All of it is in this repository, including the installer.
-- **Build it yourself** from source, if you'd rather trust your own compiler.
-- **Report the false positive** if you use one of the affected scanners. They
-  all take submissions:
+Both use `VirtualAllocEx`, `WriteProcessMemory`, `CreateRemoteThread` and
+`LoadLibraryA` together. That combination is the textbook signature for
+injecting a DLL into another program, and it is the first thing any heuristic
+looks for. It is also precisely what these two do: start Blockland paused,
+write the DLL path into it, start a thread there to load it, then let the game
+run. Nothing is hidden about that, the source is in `src/Launch.cpp`.
+
+Upload those two on their own and they light up. Upload
+`MonsterRPG Setup.exe` on its own and it does not.
+
+### What it is not
+
+The label says "downloader". It cannot download anything. The installer imports
+no networking library at all, so there is no code in it that could open a
+connection even if it wanted to. Check the import table of the .exe if you like,
+or read `Installer/src/`.
+
+### What would fix it
+
+A code signing certificate, and realistically nothing else. None of these files
+are signed. [SignPath](https://signpath.io/) and Microsoft's Azure Trusted
+Signing both do free certificates for open source projects.
+
+### What you can do now
+
+- **Check it yourself** on [VirusTotal](https://www.virustotal.com) and look at
+  *which* engines complain and what they say. Two or three generic hits out of
+  sixty-five is ordinary for unsigned software. Twenty would not be.
+- **Read the code.** All of it is here, installer included.
+- **Build it yourself**, if you would rather trust your own compiler.
+- **Report the false positive** if you use one of the affected scanners. Send
+  them the individual launcher .exe, not the whole zip, because that is what
+  they can actually act on:
   [Bkav](https://www.bkav.com/report-false-positive),
   [Rising](https://www.rising.com.cn/), Elastic via
   [their GitHub](https://github.com/elastic/protections-artifacts/issues).
 
-If a scanner ever flags this with a *specific* trojan name rather than a
-generic one, please open an issue. That would be worth looking at properly.
+If a scanner ever flags this with a *specific* trojan name instead of a generic
+one, please open an issue. That would be worth looking at properly.
 
 ## For developers
 
