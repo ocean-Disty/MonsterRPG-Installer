@@ -40,10 +40,19 @@ extern "C" void __declspec(dllexport) hello() {}
 //////////////////////////////////////////////////
 // Tick configuration (runtime, from BLTickRate.cfg)
 
-// 5 = 32 ms = 31.25 tps  (vanilla — patches become a no-op)
+// 5 = 32 ms = 31.25 tps  (vanilla - patches become a no-op)
 // 4 = 16 ms = 62.5  tps
 // 3 =  8 ms = 125   tps
-#define TICKSHIFT_DEFAULT 4
+//
+// The default is 3 because that is what the MonsterRPG servers run, and both
+// ends have to be on the same TickShift or the client moves at half speed with
+// a jittering view. This value is only reached when BLTickRate.cfg is missing
+// or unreadable, and in that situation the useful thing to do is match the
+// server rather than pick a middle number.
+//
+// It used to be 4. A player whose .cfg was not found got 62.5 tps against a
+// 125 tps server and had no way to tell why - the game just felt wrong.
+#define TICKSHIFT_DEFAULT 3
 #define TICKSHIFT_MIN     3
 #define TICKSHIFT_MAX     5
 

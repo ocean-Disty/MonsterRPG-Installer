@@ -40,8 +40,13 @@ Open `BLTickRate.cfg` in Notepad and change one number:
 | TickShift | Tick rate | Notes |
 |-----------|-----------|-------|
 | `5` | 31.25 tps | Blockland's normal speed, changes nothing |
-| `4` | 62.5 tps | Recommended. Noticeably smoother, modest cost |
-| `3` | 125 tps | Very smooth, but demanding. See below |
+| `4` | 62.5 tps | Smoother than stock, modest cost |
+| `3` | 125 tps | The default, and what MonsterRPG servers run. See below |
+
+**For MonsterRPG, leave it at 3.** Both ends have to be on the same number: a
+client on 4 against a server on 3 moves at half speed with a jittering view,
+and nothing on screen explains why. If the .cfg is missing the DLL uses 3 for
+the same reason.
 
 Save the file and restart the game. No rebuilding, no reinstalling.
 
