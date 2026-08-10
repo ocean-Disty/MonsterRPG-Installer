@@ -10,6 +10,7 @@
 #include "Log.hpp"
 #include "Cfg.hpp"
 #include "Audio.hpp"
+#include "Capture.hpp"
 
 namespace MrpgNet {
 
@@ -287,13 +288,25 @@ DWORD WINAPI ThreadMain(LPVOID)
             break;
         }
 
-        // Address check first: it is free, and it means a flood from anywhere
-        // else never reaches the HMAC. It is NOT the security boundary — source
-        // addresses are forgeable — the MAC is. This is a cost filter.
-        if (from.sin_addr.s_addr != s_server.sin_addr.s_addr) {
-            InterlockedIncrement(&s_foreign);
-            continue;
-        }
+        // THE SOURCE ADDRESS IS NOT CHECKED HERE, AND THAT IS A FIX.
+        //
+        // This used to drop anything whose source did not match the address we
+        // sent to. The comment beside it already said the right thing - source
+        // addresses are forgeable, the MAC is the security boundary, this is only
+        // a cost filter - and then the cost filter threw away every legitimate
+        // reply on a real network:
+        //
+        //   the client joins via the PUBLIC address and sends to 108.203.43.243
+        //   the server sits on the SAME LAN and its replies arrive from
+        //   192.168.1.110, so every one was counted foreign and discarded
+        //
+        // The server saw the HELLOs (its counter kept climbing) and answered
+        // every one; the client rejected all of them and sat there with a link
+        // that looked up and delivered nothing. The same break happens on any
+        // multi-homed server, and on hairpin NAT generally.
+        //
+        // So the MAC decides, exactly as the old comment claimed. A forged packet
+        // costs one HMAC and is discarded; that is what the HMAC is for.
 
         const int minLen = (int)sizeof(MrpgWireHeader) + MRPGAUDIO_MAC_BYTES;
         if (got < minLen) { InterlockedIncrement(&s_badDgrams); continue; }
@@ -339,6 +352,28 @@ DWORD WINAPI ThreadMain(LPVOID)
                 MrpgLog::Write("net:   session key disagrees. Dropping it and every one like it.");
             }
             continue;
+        }
+
+        // The address is LEARNED from an authenticated packet, never from an
+        // unauthenticated one - the same rule the server applies to us. This is
+        // what makes hairpin NAT, multi-homed servers and a roaming route all
+        // work without any of them being special cases.
+        if (from.sin_addr.s_addr != s_server.sin_addr.s_addr
+            || from.sin_port != s_server.sin_port) {
+            static bool once = false;
+            if (!once) {
+                once = true;
+                char oldIp[32], newIp[32];
+                lstrcpynA(oldIp, inet_ntoa(s_server.sin_addr), sizeof(oldIp));
+                lstrcpynA(newIp, inet_ntoa(from.sin_addr), sizeof(newIp));
+                MrpgLog::Write("net: server answers from %s:%d though we send to %s:%d"
+                               " - adopting it (authenticated).",
+                               newIp, (int)ntohs(from.sin_port),
+                               oldIp, (int)ntohs(s_server.sin_port));
+            }
+            InterlockedIncrement(&s_foreign);   // still counted, no longer fatal
+            s_server.sin_addr = from.sin_addr;
+            s_server.sin_port = from.sin_port;
         }
 
         // Replay, checked after the MAC so a flood of replayed-but-valid packets
@@ -542,6 +577,10 @@ bool Connect(const char* ip, int port, const char* keyHex,
 
     // The key is NEVER logged, not even truncated. A log is the one artefact a
     // player is asked to paste into a chat window when something goes wrong.
+    // The microphone opens HERE, on joining a MonsterRPG server, and closes in
+    // Release. Not at load, not for the life of the process.
+    MrpgCapture::Init(nullptr);
+
     MrpgLog::Write("net: invited by %s:%d (blid %u, manifest %u, can_play %d), "
                    "session key accepted, ChaCha20 + HMAC-SHA256 armed",
                    ip, port, blId, manifestVer,
@@ -556,6 +595,10 @@ void Release(const char* why)
     MrpgLog::Write("net: releasing - %s", why ? why : "(no reason given)");
 
     SendBye();
+
+    // The microphone goes first: whatever else fails below, it must not be left
+    // open after the player has left.
+    MrpgCapture::Shutdown();
 
     InterlockedExchange(&s_running, 0);
 

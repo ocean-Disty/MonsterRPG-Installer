@@ -1,57 +1,76 @@
 [      0 ms] MonsterRPGAudio  -  ray-traced game audio, played natively
-[      0 ms] launched 2026-08-08 18:07:17  pid 7428
+[      0 ms] launched 2026-08-09 22:18:37  pid 14568
 [      0 ms] ----------------------------------------------------------
-[      0 ms] dll:  0.3.0-phase3, 32-bit, loaded from C:\Users\alexa\OneDrive\Documents\MonsterRPGBlockland\Blockland\MonsterRPGAudio\bin
+[      0 ms] dll:  0.7.1-reverb-fused, 32-bit, loaded from C:\Users\alexa\OneDrive\Documents\MonsterRPGBlockland\Blockland\MonsterRPGAudio\bin
 [      0 ms] dll:  host process: "C:\Users\alexa\OneDrive\Documents\MonsterRPGBlockland\Blockland\Blockland.exe" -client
-[      0 ms] cfg: 5 settings loaded from MonsterRPGAudio.cfg
+[      0 ms] cfg: 14 settings loaded from MonsterRPGAudio.cfg
 [      0 ms] crypto: self test passed (RFC 8439 ChaCha20, RFC 4231 HMAC-SHA256)
-[    140 ms] gpu:   AMD Radeon RX 7900 XTX
-[    140 ms] gpu:     vendor 1002  device 744C  vulkan 1.4  type 2
-[    140 ms] gpu:     ray_query 1  accel_struct 1  deferred_ops 1  ->  gateA 1, gateB pass
-[    140 ms] gpu: verdict ELIGIBLE - ray query present and the generation rule passes
-[    140 ms] gpu:   chosen adapter: AMD Radeon RX 7900 XTX
-[    140 ms] gpu:   THIS DOES NOT AFFECT WHAT YOU HEAR. Acoustics are traced on the
-[    140 ms] gpu:   server's GPU regardless; this only decides whether that work can
-[    140 ms] gpu:   later be offloaded to this machine (not built yet).
-[   1953 ms] engine: game window up after 1813 ms
-[   2203 ms] engine: rendezvous armed (WH_GETMESSAGE on tid 14512)
-[  17250 ms] engine:   still waiting for the game to pump messages (15 s - it is loading add-ons)
-[  28765 ms] bind: on the game thread (tid 14512), binding to the console
-[  28781 ms] bind: registered _Version / _State / _GpuWhy / _Log / _Connect / _Release / _Stat / _MapProfile / _Listener / _AudioStat
-[  28781 ms] bind: VERIFIED - the engine evaluated MRPGAudio_Version() and answered "0.3.0-phase3"
-[  28797 ms] audio: device up - 96000 Hz, 8 ch, float32, shared mode, MMCSS
-[  28797 ms] state: READY - loaded, bound, and waiting to be invited by a server.
-[  28797 ms] state:   Nothing is hooked and no socket is open. Joining a non-MonsterRPG
-[  28797 ms] state:   server will not change that.
-[  49172 ms] net: invited by 192.168.1.110:28010 (blid 48741, manifest 1, can_play 0), session key accepted, ChaCha20 + HMAC-SHA256 armed
-[  49172 ms] net: thread up (tid 17136), talking to 192.168.1.110:28010
-[  49172 ms] script: connected to 192.168.1.110:28010 as blid 48741
-[  49172 ms] net: server answered and its MAC verified - secure link is up (its manifest version 1)
-[  49172 ms] script: profiles: 8038 datablocks, 467 audio, 0 with no filename, 467 mapped
-[  79203 ms] net: 30 s summary - 0 sound records (0 new), 31 hellos, 0 bad, 0 forged, 0 foreign
-[ 109234 ms] net: 30 s summary - 0 sound records (0 new), 61 hellos, 0 bad, 0 forged, 0 foreign
-[ 139265 ms] net: 30 s summary - 0 sound records (0 new), 91 hellos, 0 bad, 0 forged, 0 foreign
-[ 169343 ms] net: 30 s summary - 0 sound records (0 new), 121 hellos, 0 bad, 0 forged, 0 foreign
-[ 199406 ms] net: 30 s summary - 0 sound records (0 new), 151 hellos, 0 bad, 0 forged, 0 foreign
-[ 229484 ms] net: 30 s summary - 0 sound records (0 new), 181 hellos, 0 bad, 0 forged, 0 foreign
-[ 259547 ms] net: 30 s summary - 0 sound records (0 new), 211 hellos, 0 bad, 0 forged, 0 foreign
-[ 289609 ms] net: 30 s summary - 0 sound records (0 new), 241 hellos, 0 bad, 0 forged, 0 foreign
-[ 319672 ms] net: 30 s summary - 0 sound records (0 new), 271 hellos, 0 bad, 0 forged, 0 foreign
-[ 349750 ms] net: 30 s summary - 0 sound records (0 new), 301 hellos, 0 bad, 0 forged, 0 foreign
-[ 379781 ms] net: 30 s summary - 0 sound records (0 new), 331 hellos, 0 bad, 0 forged, 0 foreign
-[ 409812 ms] net: 30 s summary - 0 sound records (0 new), 361 hellos, 0 bad, 0 forged, 0 foreign
-[ 439843 ms] net: 30 s summary - 0 sound records (0 new), 391 hellos, 0 bad, 0 forged, 0 foreign
-[ 469875 ms] net: 30 s summary - 0 sound records (0 new), 421 hellos, 0 bad, 0 forged, 0 foreign
-[ 499906 ms] net: 30 s summary - 0 sound records (0 new), 451 hellos, 0 bad, 0 forged, 0 foreign
-[ 529937 ms] net: 30 s summary - 0 sound records (0 new), 481 hellos, 0 bad, 0 forged, 0 foreign
-[ 559968 ms] net: 30 s summary - 0 sound records (0 new), 511 hellos, 0 bad, 0 forged, 0 foreign
-[ 590000 ms] net: 30 s summary - 0 sound records (0 new), 541 hellos, 0 bad, 0 forged, 0 foreign
-[ 620031 ms] net: 30 s summary - 0 sound records (0 new), 571 hellos, 0 bad, 0 forged, 0 foreign
-[ 650062 ms] net: 30 s summary - 0 sound records (0 new), 601 hellos, 0 bad, 0 forged, 0 foreign
-[ 680093 ms] net: 30 s summary - 0 sound records (0 new), 631 hellos, 0 bad, 0 forged, 0 foreign
-[ 710125 ms] net: 30 s summary - 0 sound records (0 new), 661 hellos, 0 bad, 0 forged, 0 foreign
-[ 740140 ms] net: 30 s summary - 0 sound records (0 new), 691 hellos, 0 bad, 0 forged, 0 foreign
-[ 770172 ms] net: 30 s summary - 0 sound records (0 new), 721 hellos, 0 bad, 0 forged, 0 foreign
-[ 800203 ms] net: 30 s summary - 0 sound records (0 new), 751 hellos, 0 bad, 0 forged, 0 foreign
-[ 803515 ms] ----------------------------------------------------------
-[ 803515 ms] closing: process exiting
+[    125 ms] gpu:   AMD Radeon RX 7900 XTX
+[    125 ms] gpu:     vendor 1002  device 744C  vulkan 1.4  type 2
+[    125 ms] gpu:     ray_query 1  accel_struct 1  deferred_ops 1  ->  gateA 1, gateB pass
+[    125 ms] gpu: verdict ELIGIBLE - ray query present and the generation rule passes
+[    125 ms] gpu:   chosen adapter: AMD Radeon RX 7900 XTX
+[    125 ms] gpu:   THIS DOES NOT AFFECT WHAT YOU HEAR. Acoustics are traced on the
+[    125 ms] gpu:   server's GPU regardless; this only decides whether that work can
+[    125 ms] gpu:   later be offloaded to this machine (not built yet).
+[   1938 ms] engine: game window up after 1813 ms
+[   2188 ms] engine: rendezvous armed (WH_GETMESSAGE on tid 416)
+[  17234 ms] engine:   still waiting for the game to pump messages (15 s - it is loading add-ons)
+[  28219 ms] bind: on the game thread (tid 416), binding to the console
+[  28219 ms] bind: registered _Version / _State / _GpuWhy / _Log / _Connect / _Release / _Stat / _MapProfile / _Listener / _AudioStat
+[  28219 ms] bind: VERIFIED - the engine evaluated MRPGAudio_Version() and answered "0.7.1-reverb-fused"
+[  28219 ms] audio: air absorption on (0.080 dB/m at 5000 Hz)
+[  28219 ms] audio: HRTF on
+[  28219 ms] audio: room reverb off (set Reverb=1 to try it)
+[  28234 ms] audio: HRTF using MEASURED head (SADIE II KU100) - 1152 directions, 128 taps at 96000 Hz (file 48000 Hz)
+[  28234 ms] audio: device up - "SteelSeries Sonar - Gaming (SteelSeries Sonar Virtual Audio Device)" 96000 Hz, 8 ch, float32, shared mode, MMCSS
+[  28234 ms] state: READY - loaded, bound, and waiting to be invited by a server.
+[  28234 ms] state:   Nothing is hooked and no socket is open. Joining a non-MonsterRPG
+[  28234 ms] state:   server will not change that.
+[ 800359 ms] voice: microphone is "Voicemeeter Out B1 (VB-Audio Voicemeeter VAIO)"
+[ 800375 ms] voice: MICROPHONE OPEN - 48000 Hz, 2 ch, mode push-to-talk, gate 0.020/0.008
+[ 800375 ms] voice:   nothing is transmitted unless the push-to-talk key is held.
+[ 800375 ms] script: icon: start: playGui=1 orb=1 ctrl=1 active=1 stat=1 1 0 0 0 0 48000 2 0 0 0.0000 0.0015 bind=[keyboard	v]
+[ 809547 ms] net: invited by 192.168.1.110:28010 (blid 23268, manifest 1, can_play 0), session key accepted, ChaCha20 + HMAC-SHA256 armed
+[ 809547 ms] net: thread up (tid 19020), talking to 192.168.1.110:28010
+[ 809547 ms] script: connected to 192.168.1.110:28010 as blid 23268
+[ 809547 ms] net: server answered and its MAC verified - secure link is up (its manifest version 1)
+[ 809547 ms] audio: MapProfile #1 name='' path='base/data/sound/weaponSwitch.wav'
+[ 809547 ms] audio:   stored; profile map now holds 1
+[ 809547 ms] audio: MapProfile #2 name='' path='base/data/sound/error.wav'
+[ 809547 ms] audio:   stored; profile map now holds 2
+[ 809547 ms] audio: MapProfile #3 name='' path='Add-Ons/Script_PeggFootsteps/Sounds/jumpSoundPlayer.wav'
+[ 809547 ms] audio:   stored; profile map now holds 3
+[ 809547 ms] audio: MapProfile #4 name='' path='base/data/sound/death.wav'
+[ 809547 ms] audio:   stored; profile map now holds 4
+[ 809547 ms] audio: MapProfile #5 name='' path='base/data/sound/pain.wav'
+[ 809547 ms] audio:   stored; profile map now holds 5
+[ 809547 ms] script: profiles: 8002 datablocks, 467 audio, 0 no filename, 467 mapped
+[ 809547 ms] script: listener push still empty after 1 tries: conn=1 control=none
+[ 809547 ms] script: icon: start: playGui=1 orb=1 ctrl=1 active=1 stat=1 1 0 0 0 0 48000 2 0 0 0.0001 0.0015 bind=[keyboard	v]
+[ 809609 ms] audio: preload done - 165 loaded (17.3 MB), 0 failed, 0 skipped
+[ 810625 ms] audio: preload done - 135 loaded (31.0 MB), 0 failed, 0 skipped
+[ 811359 ms] audio: listener position received for the first time (-19.0 -27.0 10002.0)
+[ 811359 ms] script: listener push OK after 4 tries: pos=-19 -27 10002 fwd=0.731146 0.682221 0
+[ 811641 ms] audio: preload done - 113 loaded (38.1 MB), 0 failed, 0 skipped
+[ 812078 ms] net:   sfx seq=1 id=324 flags=00 pos=(-18.9 -26.9 10002.0) vol=0.50 pitch=1.00 occ=0.00 encl=2 mfp=11.7 loop=0
+[ 812656 ms] audio: preload done - 15 loaded (46.1 MB), 0 failed, 0 skipped
+[ 812969 ms] net:   sfx seq=2 id=319 flags=00 pos=(-11.6 -27.4 10002.0) vol=0.50 pitch=1.00 occ=0.00 encl=2 mfp=10.9 loop=0
+[ 813313 ms] net:   sfx seq=3 id=131 flags=00 pos=(-6.9 -28.6 10003.8) vol=1.00 pitch=1.00 occ=0.00 encl=5 mfp=8.6 loop=0
+[ 813313 ms] net:   sfx seq=4 id=321 flags=00 pos=(-7.4 -28.0 10002.0) vol=0.50 pitch=1.00 occ=0.00 encl=2 mfp=11.6 loop=0
+[ 813625 ms] net:   sfx seq=5 id=318 flags=00 pos=(-3.9 -29.4 10002.0) vol=0.50 pitch=1.00 occ=0.00 encl=2 mfp=11.7 loop=0
+[ 813859 ms] net:   sfx seq=6 id=132 flags=00 pos=(-1.8 -32.4 10003.7) vol=1.00 pitch=1.00 occ=0.00 encl=4 mfp=0.0 loop=0
+[ 813969 ms] net:   sfx seq=7 id=317 flags=00 pos=(-2.1 -32.8 10002.0) vol=0.50 pitch=1.00 occ=0.00 encl=4 mfp=0.0 loop=0
+[ 814250 ms] net:   sfx seq=8 id=132 flags=00 pos=(0.2 -36.1 10003.6) vol=1.00 pitch=1.00 occ=0.00 encl=5 mfp=0.0 loop=0
+[ 814281 ms] net:   sfx seq=9 id=318 flags=00 pos=(-0.1 -35.3 10002.0) vol=0.50 pitch=1.00 occ=0.00 encl=3 mfp=0.0 loop=0
+[ 814563 ms] net:   sfx seq=10 id=131 flags=00 pos=(3.1 -37.7 10003.5) vol=1.00 pitch=1.00 occ=0.00 encl=5 mfp=0.0 loop=0
+[ 814625 ms] net:   sfx seq=11 id=357 flags=00 pos=(3.6 -36.8 10002.0) vol=0.50 pitch=1.00 occ=0.00 encl=4 mfp=0.0 loop=0
+[ 814969 ms] net:   sfx seq=12 id=357 flags=00 pos=(5.3 -40.4 10002.0) vol=0.50 pitch=1.00 occ=0.00 encl=5 mfp=0.0 loop=0
+[ 814969 ms] net:   (further sound records will not be logged individually)
+[ 816000 ms] script: link confirmed on candidate 0 (192.168.1.110)
+[ 840125 ms] net: 30 s summary - 66 sound records (66 new), 30 hellos, 0 bad, 0 forged, 0 foreign
+[ 870844 ms] net: 30 s summary - 136 sound records (70 new), 59 hellos, 0 bad, 0 forged, 0 foreign
+[ 901125 ms] net: 30 s summary - 146 sound records (10 new), 89 hellos, 0 bad, 0 forged, 0 foreign
+[ 931672 ms] net: 30 s summary - 231 sound records (85 new), 118 hellos, 0 bad, 0 forged, 0 foreign
+[ 948969 ms] ----------------------------------------------------------
+[ 948969 ms] closing: process exiting

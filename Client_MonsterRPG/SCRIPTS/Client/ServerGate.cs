@@ -161,6 +161,24 @@ function MRPG_ClientEnter()
 	//no business running in the main menu.
 	if(isFunction("MRPG_initItemTip"))
 		MRPG_initItemTip();
+
+	//The settings gear, and - more importantly - the player's saved audio devices
+	//and volumes pushed into the DLL. AFTER MRPG_borrowKeys, because the gear prints
+	//the settings key underneath itself and that key is not bound until the borrow
+	//has run. It retries on its own if NewChatHud is not up yet.
+	if(isFunction("MRPGSettings_Start"))
+		MRPGSettings_Start();
+
+	//THE MICROPHONE INDICATOR'S POLL, STARTED FROM THE GATE.
+	//
+	//It used to be started only by the audio link coming up, and that is one
+	//ordering away from never starting at all: MRPGVoiceIcon_Tick returns without
+	//rescheduling when this client is not on a MonsterRPG server, so an audio invite
+	//that arrived before this function ran killed the poll permanently and silently.
+	//Started here the order cannot invert. The link still calls it too, which costs
+	//nothing - the tick cancels its own pending schedule first.
+	if(isFunction("MRPGVoiceIcon_Start"))
+		MRPGVoiceIcon_Start();
 }
 
 
@@ -209,6 +227,8 @@ function MRPG_ClientLeave()
 	//server drops our routing flag the shorter the window in which it is still
 	//sending audio to a client that has gone.
 	if(isFunction("MRPGAudioNative_Shutdown")) MRPGAudioNative_Shutdown();
+	if(isFunction("MRPGVoiceIcon_Shutdown"))   MRPGVoiceIcon_Shutdown();
+	if(isFunction("MRPGSettings_Shutdown"))    MRPGSettings_Shutdown();
 
 	if(isFunction("Minimap_Shutdown"))     Minimap_Shutdown();
 	if(isFunction("MRPGCamp_Shutdown"))    MRPGCamp_Shutdown();

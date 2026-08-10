@@ -63,7 +63,9 @@ bool IsRunning();
 // id -> name -> path -> samples. Splitting it that way is what lets the server
 // stay ignorant of where a client keeps its add-ons, and the client stay
 // ignorant of how the server numbered its manifest.
-void MapProfile(const char* name, const char* path);
+// Returns TRUE only if the pair was actually stored. Do not make this void
+// again: a caller counting successes needs to be counting stores, not calls.
+bool MapProfile(const char* name, const char* path);
 void MapId(unsigned int id, const char* name);
 void ClearMappings();
 int  MappedProfiles();
@@ -94,6 +96,26 @@ void SetListener(float x, float y, float z, float fwdX, float fwdY, float fwdZ);
 // "I hear nothing" cleanly in half: if this plays, everything downstream of the
 // link works and the fault is upstream.
 void PlayTestTone(float pan);
+
+// ── Volume ───────────────────────────────────────────────────────────────────
+//
+// Four categories: 0 master, 1 sfx, 2 music, 3 voice. 0..2, where 1 is unity.
+//
+// APPLIED PER VOICE AT THE HEAD OF ITS CHAIN, not on a bus at the end. That is
+// what makes a category slider also scale that sound's reverb send when Phase 5
+// adds one: convolution is linear, so scaling the input scales the tail with it.
+// A slider on the dry path alone would leave a sound's reverb playing after the
+// sound itself had been turned down, which is the mistake acoustics.js documents
+// at length.
+void  SetVolume(int category, float value);
+float GetVolume(int category);
+
+// Reopen the output on a different endpoint, by endpoint ID. Empty means "the
+// system default". Returns false and keeps the current device on failure - a
+// player picking a device that turns out to be unusable must not end up with no
+// audio at all.
+bool SetOutputDevice(const char* endpointId);
+const char* CurrentOutputName();
 
 // "running device voices loaded pending played missed dropped underruns bankMB skipped"
 // APPEND ONLY - read by getWord index on the script side.

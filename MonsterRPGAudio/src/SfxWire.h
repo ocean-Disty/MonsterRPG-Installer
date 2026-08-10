@@ -64,11 +64,15 @@
 // from something else is discarded before we spend a HMAC on it.
 #define MRPGAUDIO_WIRE_MAGIC   0x4150524Du
 
+// 4: NAMES carries the sound's FILE PATH, not its datablock name. Measured on a
+//    live client: getName() returns EMPTY for datablocks ghosted from a server -
+//    names are simply not transmitted - while fileName survives intact. A name is
+//    therefore not a key both sides possess, and a path is.
 // 3: adds MRPGWIRE_OP_NAMES, so a client can learn what the 16-bit sound ids in
 //    an SFX record actually refer to.
 // 2: the whole packet is now encrypted and authenticated. Version 1 was
 //    plaintext with a cleartext token and never left the test bench.
-#define MRPGAUDIO_WIRE_VERSION 3
+#define MRPGAUDIO_WIRE_VERSION 4
 
 // Session key size, in bytes. 16 is 128 bits, which is beyond reach for a key
 // that lives for one visit to one server. Carried to the client as 32 hex
@@ -88,31 +92,39 @@
 #define MRPGWIRE_OP_WELCOME    3   // server -> client, acknowledges a HELLO
 #define MRPGWIRE_OP_SFX        4   // server -> client, 1..N sound records
 #define MRPGWIRE_OP_MUS        5   // server -> client, music state
-#define MRPGWIRE_OP_NAMES      6   // server -> client, id -> sound name
+#define MRPGWIRE_OP_NAMES      6   // server -> client, id -> sound FILE PATH
 
-// ── Why NAMES exists, and why it carries names rather than file paths ────────
+// ── Why NAMES carries a PATH, and why the obvious design failed ──────────────
 //
 // An SFX record identifies its sound with a 16-bit manifest id. The client has
-// to turn that back into a file on ITS OWN disk, and the two halves of that come
-// from opposite directions:
+// to turn that into a file it can open.
 //
-//   the SERVER knows   id -> datablock name     (it numbered the manifest)
-//   the CLIENT knows   datablock name -> path   (it has the AudioProfile loaded,
-//                                                or it could not be playing here)
+// THE FIRST DESIGN SENT THE DATABLOCK NAME, on the reasoning that a path is
+// meaningless across machines - the same add-on could sit anywhere - so the
+// server should say WHICH sound and let the client find it. That reasoning was
+// wrong for one measured reason:
 //
-// So the server sends names, never paths. A path is meaningless across machines:
-// the same add-on can sit anywhere, and the server has no business guessing
-// where. This also means a client missing an add-on simply has no path for that
-// name and skips it, instead of being told to open a file that is not there.
+//     audio: MapProfile #1 name='' path='base/data/sound/weaponSwitch.wav'
 //
-// Sent once per session, right after WELCOME, and cheap enough not to bother
-// compressing: ~1000 sounds at ~28 bytes is about 28 KB, or roughly 35 datagrams
-// on a link that is idle at that moment anyway.
+// getName() returns EMPTY for a datablock ghosted from a server. Names are not
+// transmitted; fileName is. So the client cannot key on a name it does not have,
+// and 467 perfectly good AudioProfiles mapped to nothing.
+//
+// The path turns out to be the better key anyway. Blockland paths are relative
+// to the game folder and identical on every install that has the add-on -
+// "base/data/sound/weaponSwitch.wav", "Add-Ons/Script_PeggFootsteps/Sounds/..." -
+// so it is portable in exactly the way the original objection assumed it was not.
+// A client missing an add-on simply fails to open that one file, which is logged
+// and counted, and is no worse than not knowing the name for it.
 
-// Each NAMES record: id, length, then that many bytes of name. Not
-// null-terminated and not fixed-width - a fixed 32-byte name field would waste
-// most of a datagram, and a terminator would be one more thing to get wrong.
-#define MRPGWIRE_NAMES_MAX_LEN 63
+// Each NAMES record: id, length, then that many bytes of PATH. Not
+// null-terminated and not fixed-width - a fixed-width field would waste most of
+// a datagram, and a terminator would be one more thing to get wrong.
+//
+// 127 because paths are much longer than names were: the longest in this
+// install's manifest is around 60 characters, and an add-on with a long folder
+// name would blow a 63-byte limit and silently lose its sounds.
+#define MRPGWIRE_NAMES_MAX_LEN 127
 
 // HELLO capability bits.
 //
@@ -202,8 +214,8 @@ struct MrpgWireSfx {
     mrpg_u16 effectiveDistCm;
 };   // 48 bytes
 
-// One id -> name pair. Variable length, so these are walked rather than indexed:
-//     [u16 id][u8 len][len bytes of name]
+// One id -> path pair. Variable length, so these are walked rather than indexed:
+//     [u16 id][u8 len][len bytes of path]
 // `count` in the header says how many follow.
 struct MrpgWireNameHdr {
     mrpg_u16 id;

@@ -1,6 +1,6 @@
 BLTickRate - TickShift 3, 8 ms/tick, 125.00 tps
-image base 00E80000, size 004F2000
-1/TickMs = 0.12500000 at 01510000
+image base 009A0000, size 004F2000
+1/TickMs = 0.12500000 at 01810000
 
   ok       TickSec (float, 12 refs)           rva 35E9D8
   ok       TickSec (double, 16 refs)          rva 35EB70

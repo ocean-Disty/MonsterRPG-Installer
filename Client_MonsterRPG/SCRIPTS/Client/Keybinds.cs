@@ -131,6 +131,25 @@ function MRPG_buildKeyTable()
 	for(%i = 1; %i <= 12; %i++)
 		MRPG_defKey("MRPG_Cast" @ %i, "Hotbar slot " @ %i, getWord(%keys, %i - 1));
 
+	//PUSH TO TALK. A bare key, because it is held rather than tapped and a
+	//modifier combination cannot be held comfortably while also moving.
+	//
+	//"v" is the genre convention and is not claimed by anything in this table.
+	//Like every other row here it is BORROWED: whatever held it before the join
+	//gets it back on the way out, and a player who rebinds it has that choice
+	//remembered for next time - see MRPG_returnKeys and MRPG_reclaimSavedBinds.
+	MRPG_defKey("MRPG_VoicePTT",          "Push to talk",                  "v");
+
+	//THE SETTINGS MENU on ctrl+o, and a modifier for the same reason music uses one:
+	//every bare key worth having is already in this table or is one a player rests a
+	//finger on, and a full-screen panel that opens because someone brushed a key
+	//while fighting is worse than one that takes two keys to reach.
+	//
+	//It is also the least important key here to have memorised - the gear in the
+	//top-left corner opens the same screen with a click, and prints this binding
+	//underneath itself so nobody has to be told what it is. See Settings.cs.
+	MRPG_defKey("MRPG_ToggleSettings",    "Settings menu",                 "ctrl o");
+
 	//MUSIC MUTE on ctrl+m, not a bare key. Every single key worth having is either
 	//in this table already or is one a player rests a finger on, and a modifier
 	//combination cannot be hit by accident while moving or fighting - music that
@@ -224,6 +243,12 @@ function MRPG_borrowKeys()
 
 	MRPG_parkSuperShift();
 	MRPG_regAllRemaps();
+
+	//The gear in the corner prints the settings key underneath itself, and this is
+	//the moment that key becomes true - both on join and on the re-borrow that
+	//follows the Options dialog closing, which is where a remap actually lands.
+	if(isFunction("MRPGSettings_RefreshHint"))
+		MRPGSettings_RefreshHint();
 }
 
 

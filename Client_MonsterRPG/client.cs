@@ -129,6 +129,18 @@ exec("Add-Ons/Client_MonsterRPG/SCRIPTS/Client/ChatProfile.cs");
 // every function in it returns on its first line.
 exec("Add-Ons/Client_MonsterRPG/SCRIPTS/Client/AudioNative.cs");
 
+// The green microphone indicator. AFTER AudioNative.cs, whose MRPGAudio_VoiceStat
+// it polls, and it needs MonsterRPGx_MAIN_INTERFACE - so it builds on demand
+// rather than at exec time.
+exec("Add-Ons/Client_MonsterRPG/SCRIPTS/Client/VoiceIcon.cs");
+
+// The settings screen and the gear that opens it: audio devices, four volumes and
+// the microphone switch. AFTER AudioNative.cs (it drives the same DLL) and after
+// Keybinds.cs, whose table owns the Ctrl+O row and whose MRPG_keyOfBinding it uses
+// to print the key under the gear. Nothing is built at exec time - the gear needs
+// NewChatHud, so MRPGSettings_Start builds it on join.
+exec("Add-Ons/Client_MonsterRPG/SCRIPTS/Client/Settings.cs");
+
 exec("Add-Ons/Client_MonsterRPG/GUIs/MessageBoxYesNoDlgBG.gui");
 exec("Add-Ons/Client_MonsterRPG/GUIs/MessageBoxOKCancelDlgBG.gui");
 exec("Add-Ons/Client_MonsterRPG/GUIs/MessageBoxOKDlgBG.gui");

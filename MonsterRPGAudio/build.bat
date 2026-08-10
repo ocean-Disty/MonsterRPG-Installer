@@ -46,8 +46,12 @@ REM ===========================================================================
 set "UPSTREAM=%HERE%..\Add-Ons\MONSTERRPG"
 if exist "%UPSTREAM%\BlFuncs.cpp" (
     for %%F in (BlHooks.hpp BlHooks.cpp BlFuncs.hpp BlFuncs.cpp) do (
-        fc /b "%UPSTREAM%\%%F" "%HERE%src\vendor\%%F" >nul 2>&1
-        if errorlevel 1 echo  WARNING: src\vendor\%%F differs from Add-Ons\MONSTERRPG\%%F
+        REM  fc /b compares BYTES, so it fires on nothing but CRLF-vs-LF - which is
+        REM  all these files actually differ by. A warning that fires every build is
+        REM  one nobody reads, and it would hide a real drift in the noise. Plain fc
+        REM  compares CONTENT.
+        fc "%UPSTREAM%\%%F" "%HERE%src\vendor\%%F" >nul 2>&1
+        if errorlevel 1 echo  WARNING: src\vendor\%%F has DRIFTED from Add-Ons\MONSTERRPG\%%F
     )
 )
 
@@ -61,6 +65,8 @@ g++ -m32 -shared -O2 -std=c++17 -Wall ^
     "%HERE%src\Net.cpp" ^
     "%HERE%src\Audio.cpp" ^
     "%HERE%src\Wav.cpp" ^
+    "%HERE%src\Capture.cpp" ^
+    "%HERE%src\Devices.cpp" ^
     "%HERE%src\vendor\BlHooks.cpp" ^
     "%HERE%src\vendor\BlFuncs.cpp" ^
     -static-libgcc -static-libstdc++ -lpsapi -lws2_32 -lole32 -loleaut32 -lavrt -luuid

@@ -24,8 +24,10 @@
 #include "Net.hpp"
 #include "MrpgCrypto.h"
 #include "Audio.hpp"
+#include "Capture.hpp"
+#include "Devices.hpp"
 
-#define MRPGAUDIO_VERSION "0.3.0-phase3"
+#define MRPGAUDIO_VERSION "0.7.1-reverb-fused"
 
 namespace {
 
@@ -177,8 +179,9 @@ const char* TS_Release(ADDR, int argc, const char* argv[])
 const char* TS_MapProfile(ADDR, int argc, const char* argv[])
 {
     if (argc < 3) return "0";
-    MrpgAudio::MapProfile(argv[1], argv[2]);
-    return "1";
+    // The RESULT, not an unconditional "1". Script counts these, and a count
+    // that cannot fail is not a measurement.
+    return MrpgAudio::MapProfile(argv[1], argv[2]) ? "1" : "0";
 }
 
 // MRPGAudio_Listener(x, y, z, fwdX, fwdY, fwdZ) — pushed by the client add-on.
@@ -211,6 +214,107 @@ const char* TS_TestTone(ADDR, int argc, const char* argv[])
     if (pan >  1.0f) pan =  1.0f;
     MrpgAudio::PlayTestTone(pan);
     return "1";
+}
+
+// MRPGAudio_VoiceKey(0|1) — the push-to-talk key, down or up.
+//
+// Bound through Client_MonsterRPG's existing keybind table, which already
+// borrows keys on join and hands them back on leave, and already persists a
+// player's remap. Nothing new was needed for that; this is just another row.
+const char* TS_VoiceKey(ADDR, int argc, const char* argv[])
+{
+    if (argc < 2) return "0";
+    MrpgCapture::SetPushToTalk(atoi(argv[1]) != 0);
+    return "1";
+}
+
+// MRPGAudio_VoiceStat() — see MrpgCapture::StatLine for the field list. Read by
+// index; new fields go on the end, never in the middle.
+const char* TS_VoiceStat(ADDR, int, const char*[])
+{
+    return MrpgCapture::StatLine();
+}
+
+// ── The settings surface ─────────────────────────────────────────────────────
+//
+// Everything the options menu needs. Deliberately fine-grained getters rather
+// than one blob: a device name can contain spaces, so a list packed into one
+// TorqueScript string could not be split reliably by anything.
+
+// MRPGAudio_SetVolume(category, 0..2). 0 master, 1 sfx, 2 music, 3 voice.
+const char* TS_SetVolume(ADDR, int argc, const char* argv[])
+{
+    if (argc < 3) return "0";
+    MrpgAudio::SetVolume(atoi(argv[1]), (float)atof(argv[2]));
+    return "1";
+}
+
+const char* TS_GetVolume(ADDR, int argc, const char* argv[])
+{
+    static char out[32];
+    if (argc < 2) return "0";
+    _snprintf(out, sizeof(out) - 1, "%.4f", MrpgAudio::GetVolume(atoi(argv[1])));
+    out[sizeof(out) - 1] = '\0';
+    return out;
+}
+
+// MRPGAudio_DeviceCount(kind) — 0 output, 1 input. Rescans first, because the
+// player may have plugged something in with the menu already open.
+const char* TS_DeviceCount(ADDR, int argc, const char* argv[])
+{
+    static char out[16];
+    const int kind = (argc >= 2) ? atoi(argv[1]) : 0;
+    const int n = MrpgDevices::Refresh(kind ? MrpgDevices::CAPTURE : MrpgDevices::RENDER);
+    _snprintf(out, sizeof(out) - 1, "%d", n);
+    out[sizeof(out) - 1] = '\0';
+    return out;
+}
+
+// Name and id are separate calls ON PURPOSE. A friendly name contains spaces
+// ("Speakers (Realtek(R) Audio)"), so returning "id name" would be unsplittable
+// at the far end without knowing where one stops.
+const char* TS_DeviceName(ADDR, int argc, const char* argv[])
+{
+    if (argc < 3) return "";
+    return MrpgDevices::Name(atoi(argv[1]) ? MrpgDevices::CAPTURE : MrpgDevices::RENDER,
+                             atoi(argv[2]));
+}
+
+const char* TS_DeviceId(ADDR, int argc, const char* argv[])
+{
+    if (argc < 3) return "";
+    return MrpgDevices::Id(atoi(argv[1]) ? MrpgDevices::CAPTURE : MrpgDevices::RENDER,
+                           atoi(argv[2]));
+}
+
+const char* TS_DeviceIsDefault(ADDR, int argc, const char* argv[])
+{
+    if (argc < 3) return "0";
+    return MrpgDevices::IsDefault(atoi(argv[1]) ? MrpgDevices::CAPTURE : MrpgDevices::RENDER,
+                                  atoi(argv[2])) ? "1" : "0";
+}
+
+// MRPGAudio_SetDevice(kind, endpointId). Empty id means the system default.
+const char* TS_SetDevice(ADDR, int argc, const char* argv[])
+{
+    if (argc < 2) return "0";
+    const int kind = atoi(argv[1]);
+    const char* id = (argc >= 3) ? argv[2] : "";
+    return (kind ? MrpgCapture::SetInputDevice(id)
+                 : MrpgAudio::SetOutputDevice(id)) ? "1" : "0";
+}
+
+const char* TS_CurrentDevice(ADDR, int argc, const char* argv[])
+{
+    const int kind = (argc >= 2) ? atoi(argv[1]) : 0;
+    return kind ? MrpgCapture::CurrentInputName() : MrpgAudio::CurrentOutputName();
+}
+
+// MRPGAudio_VoiceEnable(0|1) — the microphone, from the settings menu.
+const char* TS_VoiceEnable(ADDR, int argc, const char* argv[])
+{
+    if (argc < 2) return "0";
+    return MrpgCapture::SetEnabled(atoi(argv[1]) != 0) ? "1" : "0";
 }
 
 // MRPGAudio_Stat() — "connected ageMs hellos sfxDgrams sfxRecords mus bad foreign forged names"
@@ -296,6 +400,17 @@ void RegisterFunctions()
     BlAddFunction(nullptr, nullptr, "MRPGAudio_Listener",   (tsf_StringCallback)TS_Listener,   "", 7, 7);
     BlAddFunction(nullptr, nullptr, "MRPGAudio_AudioStat",  (tsf_StringCallback)TS_AudioStat,  "", 1, 1);
     BlAddFunction(nullptr, nullptr, "MRPGAudio_TestTone",   (tsf_StringCallback)TS_TestTone,   "", 1, 2);
+    BlAddFunction(nullptr, nullptr, "MRPGAudio_VoiceKey",   (tsf_StringCallback)TS_VoiceKey,   "", 2, 2);
+    BlAddFunction(nullptr, nullptr, "MRPGAudio_VoiceStat",  (tsf_StringCallback)TS_VoiceStat,  "", 1, 1);
+    BlAddFunction(nullptr, nullptr, "MRPGAudio_SetVolume",      (tsf_StringCallback)TS_SetVolume,      "", 3, 3);
+    BlAddFunction(nullptr, nullptr, "MRPGAudio_GetVolume",      (tsf_StringCallback)TS_GetVolume,      "", 2, 2);
+    BlAddFunction(nullptr, nullptr, "MRPGAudio_DeviceCount",    (tsf_StringCallback)TS_DeviceCount,    "", 2, 2);
+    BlAddFunction(nullptr, nullptr, "MRPGAudio_DeviceName",     (tsf_StringCallback)TS_DeviceName,     "", 3, 3);
+    BlAddFunction(nullptr, nullptr, "MRPGAudio_DeviceId",       (tsf_StringCallback)TS_DeviceId,       "", 3, 3);
+    BlAddFunction(nullptr, nullptr, "MRPGAudio_DeviceIsDefault",(tsf_StringCallback)TS_DeviceIsDefault,"", 3, 3);
+    BlAddFunction(nullptr, nullptr, "MRPGAudio_SetDevice",      (tsf_StringCallback)TS_SetDevice,      "", 2, 3);
+    BlAddFunction(nullptr, nullptr, "MRPGAudio_CurrentDevice",  (tsf_StringCallback)TS_CurrentDevice,  "", 1, 2);
+    BlAddFunction(nullptr, nullptr, "MRPGAudio_VoiceEnable",    (tsf_StringCallback)TS_VoiceEnable,    "", 2, 2);
 }
 
 bool ScanAndRegister(bool onGameThread)
